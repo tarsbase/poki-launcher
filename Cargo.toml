@@ -1,0 +1,12 @@
+[package]
+name = "launcher"
+version = "0.1.0"
+authors = ["Ben Goldberg <benaagoldberg@gmail.com>"]
+edition = "2018"
+
+[lib]
+name = "launcher"
+path = "src/lib.rs"
+
+[dependencies]
+derive-new = "0.5.6"
