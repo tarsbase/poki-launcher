@@ -1,7 +1,14 @@
 use derive_new::*;
+use log::*;
 use std::cmp::Ordering;
 use std::time::SystemTime;
 use std::process;
+
+#[macro_use]
+extern crate pest_ast;
+extern crate from_pest;
+
+mod desktop_file;
 
 #[derive(new)]
 struct Items {
@@ -10,6 +17,7 @@ struct Items {
     half_life: f32,
 }
 
+#[allow(dead_code)]
 impl Items {
     fn sort(&mut self) {
         self.items.sort_unstable_by(|left, right| {
@@ -24,14 +32,16 @@ impl Items {
     }
 
     fn update_score(&mut self, idx: usize, weight: f32) {
+        let elapsed = self.secs_elapsed();
         self.items
             .get_mut(idx)
             .unwrap()
-            .update_frecency(weight, self.secs_elapsed(), self.half_life);
+            .update_frecency(weight, elapsed, self.half_life);
     }
 }
 
 #[derive(new)]
+#[allow(dead_code)]
 struct Item {
     name: String,
     path: String,
@@ -39,6 +49,7 @@ struct Item {
     score: f32,
 }
 
+#[allow(dead_code)]
 impl Item {
     fn get_frecency(&self, elapsed:f32, half_life: f32) -> f32 {
         self.score / 2.0f32.powf(elapsed / half_life)
@@ -54,6 +65,7 @@ impl Item {
 }
 
 /// Return the current time in seconds as a float
+#[allow(dead_code)]
 pub fn current_time_secs() -> f64 {
     match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
         Ok(n) => (n.as_secs() as u128 * 1000 + n.subsec_millis() as u128) as f64 / 1000.0,

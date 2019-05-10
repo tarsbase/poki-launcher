@@ -1,0 +1,19 @@
+//
+// Created by intellij-pest on 2019-05-10
+// desktop_file
+// Author: zethra
+//
+
+desktop_file = {
+    SOI ~
+    ((header | param)? ~ NEWLINE)* ~
+    EOI
+}
+
+header = { "[" ~ header_val ~ "]" }
+header_val = { (!("[" | "]") ~ ANY)* }
+
+param = { key ~ "=" ~ value}
+key = { ASCII_ALPHANUMERIC+ }
+value = { (!NEWLINE ~ ANY)* }
+
