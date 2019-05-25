@@ -8,7 +8,7 @@ mod desktop_entry;
 
 #[derive(new)]
 struct Items {
-    items: Vec<Item>,
+    items: Vec<App>,
     reference_time: f64,
     half_life: f32,
 }
@@ -36,17 +36,17 @@ impl Items {
     }
 }
 
-#[derive(new)]
+#[derive(new, Debug, Default)]
 #[allow(dead_code)]
-struct Item {
+struct App {
     name: String,
-    path: String,
+    exec: String,
     #[new(default)]
     score: f32,
 }
 
 #[allow(dead_code)]
-impl Item {
+impl App {
     fn get_frecency(&self, elapsed:f32, half_life: f32) -> f32 {
         self.score / 2.0f32.powf(elapsed / half_life)
     }

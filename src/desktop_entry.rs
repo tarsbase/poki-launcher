@@ -1,11 +1,6 @@
 use ini::Ini;
 use failure::{Error, Fail};
-
-#[derive(Debug, Clone)]
-pub (super) struct DesktopEntry {
-    name: String,
-    exec: String,
-}
+use super::App;
 
 #[derive(Debug, Fail)]
 pub (super) enum DesktopEntryParseError {
@@ -13,12 +8,13 @@ pub (super) enum DesktopEntryParseError {
     MissingSection,
 }
 
-pub (super) fn parse_desktop_file(path: &str) -> Result<DesktopEntry, Error> {
+pub (super) fn parse_desktop_file(path: &str) -> Result<App, Error> {
     // TODO Finish implementation
     let file = Ini::load_from_file(path)?;
     let entry = file.section(Some("Desktop Entry".to_owned())).ok_or(DesktopEntryParseError::MissingSection)?;
-    Ok(DesktopEntry {
+    Ok(App {
         name: entry.get("Name").unwrap().clone(),
         exec: entry.get("Exec").unwrap().clone(),
+        ..Default::default()
     })
 }
