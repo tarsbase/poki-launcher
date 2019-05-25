@@ -1,5 +1,6 @@
 mod desktop_entry;
 mod db;
+mod runner;
 
 use derive_new::*;
 
