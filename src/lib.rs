@@ -4,6 +4,8 @@ use std::cmp::Ordering;
 use std::time::SystemTime;
 use std::process;
 
+mod desktop_entry;
+
 #[derive(new)]
 struct Items {
     items: Vec<Item>,

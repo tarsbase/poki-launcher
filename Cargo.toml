@@ -10,3 +10,7 @@ path = "src/lib.rs"
 
 [dependencies]
 derive-new = "0.5.6"
+failure = "0.1.5"
+log = "0.4.6"
+serde = "1.0.91"
+rust-ini = "0.13"
