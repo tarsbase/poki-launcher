@@ -1,3 +1,5 @@
+use launcher;
+
 fn main() {
-    println!("Hello, world!");
+    dbg!(launcher::scan::desktop_entries());
 }

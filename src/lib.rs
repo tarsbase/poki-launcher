@@ -1,6 +1,7 @@
 mod desktop_entry;
 mod db;
 mod runner;
+pub mod scan;
 
 use derive_new::*;
 
