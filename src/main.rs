@@ -1,5 +1,5 @@
 use launcher;
 
 fn main() {
-    dbg!(launcher::scan::desktop_entries());
+    dbg!(launcher::scan::desktop_files());
 }

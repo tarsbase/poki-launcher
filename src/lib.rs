@@ -7,7 +7,7 @@ use derive_new::*;
 
 #[derive(new, Debug, Default)]
 #[allow(dead_code)]
-struct App {
+pub struct App {
     name: String,
     exec: String,
     #[new(default)]
