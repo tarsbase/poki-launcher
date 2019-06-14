@@ -24,13 +24,14 @@ pub fn desktop_files() -> Result<Vec<PathBuf>, Error> {
     Ok(files)
 }
 
-pub fn desktop_parse_entries(files: Vec<PathBuf>) -> Result<Vec<App>, Error> {
-    files.iter().map(|path| {
-        let mut file = File::open(&path)?;
-        let mut buf = String::new();
-        file.read_to_string(&mut buf)?;
-        parse_desktop_file(&buf)
-    }).collect()
+pub fn parse_parse_entries(files: Vec<PathBuf>) -> (Vec<App>, Vec<Error>) {
+    let (apps, errs): (Vec<_>, Vec<_>) = files
+        .into_iter()
+        .map(|path| parse_desktop_file(&path))
+        .partition(Result::is_ok);
+    let apps: Vec<_> = apps.into_iter().map(Result::unwrap).collect();
+    let errs: Vec<_> = errs.into_iter().map(Result::unwrap_err).collect();
+    (apps, errs)
 }
 
 #[cfg(test)]
