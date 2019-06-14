@@ -7,6 +7,9 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
 
+use gio::prelude::*;
+use gtk::prelude::*;
+use gtk::{Application, ApplicationWindow, Entry, EntryExt};
 
 const DB_PATH: &'static str = "apps.db";
 
@@ -36,4 +39,23 @@ fn main() {
     for (app, score) in app_list {
         println!("{}\t{}", app, score);
     }
+
+    let application = Application::new("com.github.gtk-rs.examples.basic", Default::default())
+        .expect("failed to initialize GTK application");
+
+    application.connect_activate(|app| {
+        let window = ApplicationWindow::new(app);
+        window.set_title("First GTK+ Program");
+        window.set_default_size(350, 70);
+
+        let entry = Entry::new();
+        entry.connect_changed(|entry| {
+            dbg!(&entry.get_text());
+        });
+        window.add(&entry);
+
+        window.show_all();
+    });
+
+    application.run(&[]);
 }

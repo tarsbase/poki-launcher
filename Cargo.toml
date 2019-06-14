@@ -17,3 +17,8 @@ serde_derive = "1.0.92"
 rust-ini = "0.13"
 rmp-serde = "0.13.7"
 fuzzy-matcher = "0.2.1"
+gio = "0.6.0"
+
+[dependencies.gtk]
+version = "0.6.0"
+features = ["v3_16"]
