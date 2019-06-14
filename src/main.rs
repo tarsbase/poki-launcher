@@ -7,9 +7,12 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
 
+use gdk::enums::key;
+use glib::signal::Inhibit;
 use gio::prelude::*;
 use gtk::prelude::*;
-use gtk::{Application, ApplicationWindow, Entry, EntryExt};
+use gtk::{Application, ApplicationWindow, Entry, EntryExt, WidgetExt};
+
 
 const DB_PATH: &'static str = "apps.db";
 
@@ -43,6 +46,7 @@ fn main() {
 
         let entry = Entry::new();
         entry.connect_changed(move |entry| {
+            dbg!(&entry);
             if let Some(text) = entry.get_text() {
                 let apps = apps.clone();
                 let mut app_list = apps
@@ -58,6 +62,12 @@ fn main() {
                     println!("{}\t{}", app, score);
                 }
             }
+        });
+        entry.connect_key_press_event(|entry, event| {
+            if event.get_keyval() == key::Return {
+                println!("Enter pressed!");
+            }
+            Inhibit(false)
         });
         window.add(&entry);
 
