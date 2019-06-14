@@ -1,9 +1,10 @@
 use derive_new::*;
 use log::*;
 use std::cmp::Ordering;
-use std::time::SystemTime;
-use std::process;
 
+use std::fmt::Display;
+use std::process;
+use std::time::SystemTime;
 use super::App;
 
 #[derive(new)]
@@ -39,16 +40,20 @@ impl Items {
 
 #[allow(dead_code)]
 impl App {
-    fn get_frecency(&self, elapsed:f32, half_life: f32) -> f32 {
+    fn get_frecency(&self, elapsed: f32, half_life: f32) -> f32 {
         self.score / 2.0f32.powf(elapsed / half_life)
     }
 
-    fn set_frecency(&mut self, new: f32, elapsed:f32, half_life: f32) {
+    fn set_frecency(&mut self, new: f32, elapsed: f32, half_life: f32) {
         self.score = new * 2.0f32.powf(elapsed / half_life);
     }
 
-    fn update_frecency(&mut self, weight: f32, elapsed:f32, half_life: f32) {
-        self.set_frecency(self.get_frecency(elapsed, half_life) + weight, elapsed, half_life);
+    fn update_frecency(&mut self, weight: f32, elapsed: f32, half_life: f32) {
+        self.set_frecency(
+            self.get_frecency(elapsed, half_life) + weight,
+            elapsed,
+            half_life,
+        );
     }
 }
 
