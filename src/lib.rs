@@ -7,7 +7,7 @@ use derive_new::*;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(new, Debug, Default, Serialize, Deserialize)]
+#[derive(new, Debug, Default, Clone, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct App {
     pub name: String,
