@@ -5,7 +5,7 @@ use super::App;
 
 impl App {
     #[allow(dead_code)]
-    fn run(&self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<(), Error> {
         Command::new("bash")
             .args(vec!["-c", &self.exec])
             .stdout(Stdio::null())

@@ -2,6 +2,7 @@
 mod db;
 pub mod desktop_entry;
 pub mod scan;
+pub mod runner;
 
 use derive_new::*;
 use serde_derive::{Deserialize, Serialize};
