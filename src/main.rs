@@ -22,6 +22,7 @@ use gtk::{Application, ApplicationWindow, Entry, EntryExt,
 
 
 const DB_PATH: &'static str = "apps.db";
+const MAX_APPS_SHOWN: usize = 5;
 
 #[derive(Debug, Clone)]
 enum InMsg {
@@ -98,6 +99,7 @@ fn build_ui(application: &gtk::Application, apps: Vec<App>) {
     top_box.pack_start(&entry, true, true, 0);
     top_box.pack_end(&tree, true, true, 0);
     window.add(&top_box);
+
     let search_tx = input_tx.clone();
     entry.connect_changed(move |entry| {
         dbg!(&entry);
@@ -121,8 +123,9 @@ fn build_ui(application: &gtk::Application, apps: Vec<App>) {
         match msg {
             OutMsg::AppList(apps) => {
                 store.clear();
+                let end = if apps.len() > MAX_APPS_SHOWN { MAX_APPS_SHOWN } else { apps.len() };
                 println!("--------------------------");
-                for app in &apps {
+                for app in &apps[0..end] {
                     println!("{}", app);
                     store.insert_with_values(None, None, &[0], &[&app.name]);
                 }
