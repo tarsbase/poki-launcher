@@ -73,7 +73,6 @@ fn build_ui(application: &gtk::Application, apps: Vec<App>) {
                         app.run().unwrap();
                     }
                     output_tx.send(OutMsg::Hide).unwrap();
-                    println!("GB Exiting");
                     break;
                 }
                 InMsg::Exit => {
@@ -112,7 +111,6 @@ fn build_ui(application: &gtk::Application, apps: Vec<App>) {
 
     let search_tx = input_tx.clone();
     entry.connect_changed(move |entry| {
-        dbg!(&entry);
         if let Some(text) = entry.get_text() {
             let text_str = text.as_str().to_owned();
             search_tx
