@@ -11,12 +11,12 @@ treeview {
     color: #f8f8f2;
 }
 
+treeview:first-child {
+    background: #44475a;
+}
+
 entry {
     background: #44475a;
     border-style: none;
     color: #f8f8f2;
-}
-
-tree_view {
-    background: #282a36;
 }

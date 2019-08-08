@@ -1,4 +1,4 @@
-mod db;
+pub mod db;
 pub mod desktop_entry;
 pub mod runner;
 pub mod scan;

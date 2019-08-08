@@ -1,11 +1,9 @@
 use failure::Error;
 
+use crate::desktop_entry::parse_desktop_file;
+use crate::App;
 use std::fs::read_dir;
 use std::path::PathBuf;
-use crate::App;
-use std::fs::File;
-use std::io::Read;
-use crate::desktop_entry::parse_desktop_file;
 
 fn search_locations() -> Vec<&'static str> {
     vec!["/usr/share/applications"]

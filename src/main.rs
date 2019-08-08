@@ -1,6 +1,6 @@
 use fuzzy_matcher::skim::fuzzy_match;
 use launcher::scan::*;
-use launcher::{self, App};
+use launcher::{self, db::AppsDB, App};
 
 use rmp_serde as rmp;
 use serde::{Deserialize, Serialize};
@@ -33,15 +33,16 @@ enum InMsg {
 
 #[derive(Debug, Clone)]
 enum OutMsg {
-    AppList(Vec<App>),
+    AppList(Vec<(App, usize)>),
     Hide,
 }
 
 lazy_static! {
     static ref BG: Arc<Mutex<Option<JoinHandle<()>>>> = Arc::new(Mutex::new(None));
+    // static ref SELECTED: Arc<Mutex<>> = Arc::new(Mutex::new(None));
 }
 
-fn build_ui(application: &gtk::Application, apps: Vec<App>) {
+fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
     let (input_tx, input_rx): (mpsc::Sender<InMsg>, mpsc::Receiver<InMsg>) = mpsc::channel();
     let (output_tx, output_rx): (glib::Sender<OutMsg>, glib::Receiver<OutMsg>) =
         glib::MainContext::channel(glib::PRIORITY_HIGH);
@@ -52,14 +53,17 @@ fn build_ui(application: &gtk::Application, apps: Vec<App>) {
             match input_rx.recv().unwrap() {
                 InMsg::SearchText(text) => {
                     let mut app_list = apps
+                        .apps
                         .iter()
-                        .filter_map(|app| match fuzzy_match(&app.name, &text) {
-                            Some(score) if score > 0 => Some((app.clone(), score)),
+                        .enumerate()
+                        .filter_map(|(i, app)| match fuzzy_match(&app.name, &text) {
+                            Some(score) if score > 0 => Some((app.clone(), score, i)),
                             _ => None,
                         })
-                        .collect::<Vec<(App, i64)>>();
+                        .collect::<Vec<(App, i64, usize)>>();
                     app_list.sort_by(|left, right| right.1.cmp(&left.1));
-                    let ret_list: Vec<App> = app_list.into_iter().map(|(app, _)| app).collect();
+                    let ret_list: Vec<(App, usize)> =
+                        app_list.into_iter().map(|(app, _, i)| (app, i)).collect();
                     if let Some(app) = ret_list.get(0) {
                         to_launch = Some(app.clone());
                     } else {
@@ -68,9 +72,14 @@ fn build_ui(application: &gtk::Application, apps: Vec<App>) {
                     output_tx.send(OutMsg::AppList(ret_list)).unwrap();
                 }
                 InMsg::Run => {
-                    if let Some(app) = &to_launch {
+                    if let Some((app, i)) = &to_launch {
                         // TODO Handle app run failures
                         app.run().unwrap();
+                        apps.update_score(*i, 1.0);
+                        let mut buf = Vec::new();
+                        apps.serialize(&mut rmp::Serializer::new(&mut buf)).unwrap();
+                        let mut file = File::create("apps.db").unwrap();
+                        file.write_all(&buf).unwrap();
                     }
                     output_tx.send(OutMsg::Hide).unwrap();
                     break;
@@ -137,14 +146,15 @@ fn build_ui(application: &gtk::Application, apps: Vec<App>) {
                 } else {
                     apps.len()
                 };
-                println!("--------------------------");
-                for app in &apps[0..end] {
-                    println!("{}", app);
+                // println!("--------------------------");
+                for (app, _) in &apps[0..end] {
+                    // println!("{}", app);
                     store.insert_with_values(None, None, &[0], &[&app.name]);
                 }
                 for _ in end..5 {
                     store.insert_with_values(None, None, &[0], &[&" ".to_owned()]);
                 }
+                if apps.len() > 0 {}
             }
             OutMsg::Hide => {
                 let bg_handle = mem::replace(&mut *BG.lock().unwrap(), None).unwrap();
@@ -172,6 +182,8 @@ fn build_ui(application: &gtk::Application, apps: Vec<App>) {
     window.show_all();
     window.present();
     window.set_keep_above(true);
+    // entry.grab_default();
+    tree.set_sensitive(false);
 }
 
 // if let Some(app) = app_list.get(0) {
@@ -183,7 +195,7 @@ fn main() {
 
     application.connect_activate(|app| {
         let db_path = Path::new(&DB_PATH);
-        let apps: Vec<App> = if db_path.exists() {
+        let apps: AppsDB = if db_path.exists() {
             let mut apps_file = File::open(&db_path).unwrap();
             let mut buf = Vec::new();
             apps_file.read_to_end(&mut buf).unwrap();
@@ -193,6 +205,7 @@ fn main() {
             let desktop_files = desktop_files();
             let desktop_files = desktop_files.unwrap();
             let (apps, _errs) = parse_parse_entries(desktop_files);
+            let apps = AppsDB::new(apps);
             let mut buf = Vec::new();
             apps.serialize(&mut rmp::Serializer::new(&mut buf)).unwrap();
             let mut file = File::create("apps.db").unwrap();

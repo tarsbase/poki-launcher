@@ -1,23 +1,30 @@
-use derive_new::*;
 use log::*;
 use std::cmp::Ordering;
 
-use std::fmt::Display;
+use super::App;
+use serde_derive::{Deserialize, Serialize};
 use std::process;
 use std::time::SystemTime;
-use super::App;
 
-#[derive(new)]
-struct Items {
-    items: Vec<App>,
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AppsDB {
+    pub apps: Vec<App>,
     reference_time: f64,
     half_life: f32,
 }
 
 #[allow(dead_code)]
-impl Items {
-    fn sort(&mut self) {
-        self.items.sort_unstable_by(|left, right| {
+impl AppsDB {
+    pub fn new(apps: Vec<App>) -> AppsDB {
+        AppsDB {
+            apps,
+            reference_time: current_time_secs(),
+            half_life: 60.0 * 60.0 * 24.0 * 3.0,
+        }
+    }
+
+    pub fn sort(&mut self) {
+        self.apps.sort_unstable_by(|left, right| {
             left.score
                 .partial_cmp(&right.score)
                 .unwrap_or(Ordering::Less)
@@ -28,15 +35,14 @@ impl Items {
         (current_time_secs() - self.reference_time) as f32
     }
 
-    fn update_score(&mut self, idx: usize, weight: f32) {
+    pub fn update_score(&mut self, idx: usize, weight: f32) {
         let elapsed = self.secs_elapsed();
-        self.items
+        self.apps
             .get_mut(idx)
             .unwrap()
             .update_frecency(weight, elapsed, self.half_life);
     }
 }
-
 
 #[allow(dead_code)]
 impl App {
