@@ -1,0 +1,22 @@
+window {
+    background: #282a36;
+}
+
+box {
+    background: #282a36;
+}
+
+treeview {
+    background: #282a36;
+    color: #f8f8f2;
+}
+
+entry {
+    background: #44475a;
+    border-style: none;
+    color: #f8f8f2;
+}
+
+tree_view {
+    background: #282a36;
+}

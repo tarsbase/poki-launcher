@@ -1,5 +1,4 @@
 use fuzzy_matcher::skim::fuzzy_match;
-use launcher::runner::*;
 use launcher::scan::*;
 use launcher::{self, App};
 
@@ -7,22 +6,23 @@ use rmp_serde as rmp;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{Read, Write};
+use std::mem;
 use std::path::Path;
+use std::sync::{Arc, Mutex};
 
-use std::sync::mpsc;
-use std::thread;
 use gdk::enums::key;
+use std::sync::mpsc;
+use std::thread::{self, JoinHandle};
 
-use gtk::prelude::*;
 use gio::prelude::*;
 use glib::{self, signal::Inhibit};
-use gtk::{Application, ApplicationWindow, Entry, EntryExt,
-    WidgetExt, BoxExt, Label, LabelExt, TreeView, TreeViewExt,
-    TreeStore, TreeStoreExt, TreeViewColumn, CellRendererText};
-
+use gtk::prelude::*;
+use gtk::*;
+use lazy_static::*;
 
 const DB_PATH: &'static str = "apps.db";
 const MAX_APPS_SHOWN: usize = 5;
+const CSS: &str = include_str!("app.css");
 
 #[derive(Debug, Clone)]
 enum InMsg {
@@ -37,12 +37,16 @@ enum OutMsg {
     Hide,
 }
 
+lazy_static! {
+    static ref BG: Arc<Mutex<Option<JoinHandle<()>>>> = Arc::new(Mutex::new(None));
+}
+
 fn build_ui(application: &gtk::Application, apps: Vec<App>) {
     let (input_tx, input_rx): (mpsc::Sender<InMsg>, mpsc::Receiver<InMsg>) = mpsc::channel();
     let (output_tx, output_rx): (glib::Sender<OutMsg>, glib::Receiver<OutMsg>) =
         glib::MainContext::channel(glib::PRIORITY_HIGH);
 
-    thread::spawn(move || {
+    let bg_handle = thread::spawn(move || {
         let mut to_launch = None;
         loop {
             match input_rx.recv().unwrap() {
@@ -67,15 +71,18 @@ fn build_ui(application: &gtk::Application, apps: Vec<App>) {
                     if let Some(app) = &to_launch {
                         // TODO Handle app run failures
                         app.run().unwrap();
-                        output_tx.send(OutMsg::Hide).unwrap();
                     }
+                    output_tx.send(OutMsg::Hide).unwrap();
+                    println!("GB Exiting");
+                    break;
                 }
                 InMsg::Exit => {
-                    return;
+                    break;
                 }
             }
         }
     });
+    *BG.lock().unwrap() = Some(bg_handle);
 
     let window = ApplicationWindow::new(application);
     let top_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
@@ -90,7 +97,10 @@ fn build_ui(application: &gtk::Application, apps: Vec<App>) {
     tree.append_column(&col);
     tree.set_model(Some(&store));
     tree.set_headers_visible(false);
-    // store.insert_with_values(None, None, &[0], &[&"App Oh!"]);
+    // Initalize with 5 empty entryies for spacing
+    for _ in 0..5 {
+        store.insert_with_values(None, None, &[0], &[&" ".to_owned()]);
+    }
 
     window.set_title("Poki Launcher");
     window.set_default_size(350, 70);
@@ -111,31 +121,55 @@ fn build_ui(application: &gtk::Application, apps: Vec<App>) {
         }
     });
     let run_tx = input_tx.clone();
-    entry.connect_key_press_event(move |entry, event| {
+    let exit_tx = input_tx.clone();
+    entry.connect_key_press_event(move |_entry, event| {
         if event.get_keyval() == key::Return {
-            println!("Enter pressed!");
             run_tx.send(InMsg::Run).unwrap();
         }
         Inhibit(false)
     });
 
+    let exit_window = window.clone();
     output_rx.attach(None, move |msg| {
         match msg {
             OutMsg::AppList(apps) => {
                 store.clear();
-                let end = if apps.len() > MAX_APPS_SHOWN { MAX_APPS_SHOWN } else { apps.len() };
+                let end = if apps.len() > MAX_APPS_SHOWN {
+                    MAX_APPS_SHOWN
+                } else {
+                    apps.len()
+                };
                 println!("--------------------------");
                 for app in &apps[0..end] {
                     println!("{}", app);
                     store.insert_with_values(None, None, &[0], &[&app.name]);
                 }
+                for _ in end..5 {
+                    store.insert_with_values(None, None, &[0], &[&" ".to_owned()]);
+                }
             }
-            OutMsg::Hide => {}
+            OutMsg::Hide => {
+                let bg_handle = mem::replace(&mut *BG.lock().unwrap(), None).unwrap();
+                bg_handle.join().unwrap();
+                exit_window.destroy();
+            }
         }
         glib::Continue(true)
     });
 
+    window.connect_delete_event(move |_, _| {
+        exit_tx.send(InMsg::Exit).unwrap();
+        let bg_handle = mem::replace(&mut *BG.lock().unwrap(), None).unwrap();
+        bg_handle.join().unwrap();
+        // main_quit();
+        Inhibit(false)
+    });
+
     // entry.show();
+    let screen = window.get_screen().unwrap();
+    let style = CssProvider::new();
+    let _ = CssProvider::load_from_data(&style, CSS.as_bytes());
+    StyleContext::add_provider_for_screen(&screen, &style, STYLE_PROVIDER_PRIORITY_USER);
 
     window.show_all();
     window.present();
