@@ -1,6 +1,6 @@
 use fuzzy_matcher::skim::fuzzy_match;
-use launcher::scan::*;
-use launcher::{self, db::AppsDB, App};
+use poki_launcher::scan::*;
+use poki_launcher::{self, db::AppsDB, App};
 
 use rmp_serde as rmp;
 use serde::{Deserialize, Serialize};
