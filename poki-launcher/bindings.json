@@ -1,0 +1,15 @@
+{
+    "cppFile": "Bindings.cpp",
+    "rust": {
+        "dir": "",
+        "interfaceModule": "interface",
+        "implementationModule": "implementation"
+    },
+    "objects": {
+        "AppsModel": {
+            "type": "List",
+            "properties": {},
+            "itemProperties": {}
+        }
+    }
+}

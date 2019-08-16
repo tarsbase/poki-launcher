@@ -3,4 +3,5 @@
 members = [
 	"launcher",
 	"launcher-gtk",
+	"poki-launcher",
 ]
