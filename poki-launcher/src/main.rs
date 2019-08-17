@@ -1,5 +1,3 @@
-extern crate libc;
-
 mod implementation;
 pub mod interface {
     include!(concat!(env!("OUT_DIR"), "/src/interface.rs"));

@@ -6,7 +6,8 @@ links = "poki-launcher"
 edition = "2018"
 
 [dependencies]
-libc = "*"
+libc = "0.2"
+lib-poki-launcher = { path = "../launcher" }
 
 [build-dependencies]
 rust_qt_binding_generator = "0.3"

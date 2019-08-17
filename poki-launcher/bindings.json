@@ -9,7 +9,24 @@
         "AppsModel": {
             "type": "List",
             "properties": {},
-            "itemProperties": {}
+            "itemProperties": {
+                "name": {
+                    "type": "QString",
+                    "write": true
+                }
+            },
+            "functions": {
+                "search": {
+                    "return": "void",
+                    "mut": true,
+                    "arguments": [
+                        {
+                            "name": "text",
+                            "type": "QString"
+                        }
+                    ]
+                }
+            }
         }
     }
 }
