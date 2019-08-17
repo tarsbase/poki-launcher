@@ -3,27 +3,57 @@ pub mod desktop_entry;
 pub mod runner;
 pub mod scan;
 
-use derive_new::*;
-use itertools::Itertools;
+use db::AppsDB;
+use failure::Error;
+use rmp_serde as rmp;
+use serde::{Deserialize, Serialize};
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::Path;
+use uuid::prelude::*;
 
-#[derive(new, Debug, Default, Clone, Serialize, Deserialize)]
+pub mod prelude {
+    pub use crate::db::AppsDB;
+    pub use crate::App;
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct App {
     pub name: String,
     exec: String,
-    #[new(default)]
     score: f32,
+    uuid: Uuid,
 }
 
 impl App {
-    pub fn strip_args(&mut self) {
-        self.exec = self
-            .exec
-            .split(" ")
-            .filter(|item| !item.starts_with("%"))
-            .join(" ");
+    pub fn new(name: String, exec: String) -> App {
+        App {
+            name,
+            exec,
+            uuid: Uuid::new_v4(),
+            score: 0.0,
+        }
+    }
+}
+
+impl AppsDB {
+    pub fn load(path: impl AsRef<Path>) -> Result<AppsDB, Error> {
+        let mut apps_file = File::open(&path)?;
+        let mut buf = Vec::new();
+        apps_file.read_to_end(&mut buf)?;
+        let mut de = rmp::Deserializer::new(&buf[..]);
+        Ok(Deserialize::deserialize(&mut de)?)
+    }
+
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<(), Error> {
+        let mut buf = Vec::new();
+        self.serialize(&mut rmp::Serializer::new(&mut buf))?;
+        let mut file = File::create(&path)?;
+        file.write_all(&buf)?;
+        Ok(())
     }
 }
 

@@ -1,11 +1,10 @@
 use fuzzy_matcher::skim::fuzzy_match;
-use lib_poki_launcher::scan::*;
-use lib_poki_launcher::{self, db::AppsDB, App};
+use lib_poki_launcher::prelude::*;
 
 use rmp_serde as rmp;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::Write;
 use std::mem;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -195,21 +194,11 @@ fn main() {
 
     application.connect_activate(|app| {
         let db_path = Path::new(&DB_PATH);
-        let apps: AppsDB = if db_path.exists() {
-            let mut apps_file = File::open(&db_path).unwrap();
-            let mut buf = Vec::new();
-            apps_file.read_to_end(&mut buf).unwrap();
-            let mut de = rmp::Deserializer::new(&buf[..]);
-            Deserialize::deserialize(&mut de).unwrap()
+        let apps = if db_path.exists() {
+            AppsDB::load(&DB_PATH).unwrap()
         } else {
-            let desktop_files = desktop_files();
-            let desktop_files = desktop_files.unwrap();
-            let (apps, _errs) = parse_parse_entries(desktop_files);
-            let apps = AppsDB::new(apps);
-            let mut buf = Vec::new();
-            apps.serialize(&mut rmp::Serializer::new(&mut buf)).unwrap();
-            let mut file = File::create("apps.db").unwrap();
-            file.write_all(&buf).unwrap();
+            let apps = AppsDB::from_desktop_entries().unwrap();
+            apps.save(&DB_PATH).expect("Faile to write db to disk");
             apps
         };
 

@@ -13,33 +13,3 @@ impl App {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn run_xterm() {
-        let app = App::new("xTerm".to_owned(), "xterm".to_owned());
-        app.run().unwrap();
-    }
-
-    #[test]
-    fn run_terminator() {
-        let app = App::new("Terminator".to_owned(), "terminator".to_owned());
-        app.run().unwrap();
-    }
-
-    #[test]
-    fn run_vim() {
-        let app = App::new("Vim".to_owned(), "vim %F".to_owned());
-        app.run().unwrap();
-    }
-
-    #[test]
-    fn run_error() {
-        // TODO This should probably produce an error
-        let app = App::new("Error".to_owned(), "awdawdawdawdawd".to_owned());
-        app.run().unwrap();
-    }
-}

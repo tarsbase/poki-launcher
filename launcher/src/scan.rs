@@ -1,5 +1,6 @@
 use failure::Error;
 
+use crate::db::AppsDB;
 use crate::desktop_entry::parse_desktop_file;
 use crate::App;
 use std::fs::read_dir;
@@ -9,7 +10,7 @@ fn search_locations() -> Vec<&'static str> {
     vec!["/usr/share/applications"]
 }
 
-pub fn desktop_files() -> Result<Vec<PathBuf>, Error> {
+fn desktop_entires() -> Result<Vec<PathBuf>, Error> {
     let mut files = Vec::new();
     for loc in search_locations() {
         for entry in read_dir(&loc)? {
@@ -22,24 +23,13 @@ pub fn desktop_files() -> Result<Vec<PathBuf>, Error> {
     Ok(files)
 }
 
-pub fn parse_parse_entries(files: Vec<PathBuf>) -> (Vec<App>, Vec<Error>) {
-    let (apps, errs): (Vec<_>, Vec<_>) = files
-        .into_iter()
-        .map(|path| parse_desktop_file(&path))
-        .partition(Result::is_ok);
-    let apps: Vec<_> = apps.into_iter().map(Result::unwrap).collect();
-    let errs: Vec<_> = errs.into_iter().map(Result::unwrap_err).collect();
-    (apps, errs)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn scan() {
-        let entries = desktop_files();
-        #[allow(unused_must_use)]
-        dbg!(entries);
+impl AppsDB {
+    pub fn from_desktop_entries() -> Result<AppsDB, Error> {
+        let files = desktop_entires()?;
+        let apps = files
+            .into_iter()
+            .map(|path| parse_desktop_file(&path))
+            .collect::<Result<Vec<App>, Error>>()?;
+        Ok(AppsDB::new(apps))
     }
 }
