@@ -2,7 +2,6 @@ use failure::Error;
 
 use crate::db::AppsDB;
 use crate::desktop_entry::parse_desktop_file;
-use crate::App;
 use std::fs::read_dir;
 use std::path::PathBuf;
 
@@ -26,10 +25,13 @@ fn desktop_entires() -> Result<Vec<PathBuf>, Error> {
 impl AppsDB {
     pub fn from_desktop_entries() -> Result<AppsDB, Error> {
         let files = desktop_entires()?;
-        let apps = files
+        let (apps, errs): (Vec<_>, Vec<_>) = files
             .into_iter()
             .map(|path| parse_desktop_file(&path))
-            .collect::<Result<Vec<App>, Error>>()?;
+            .partition(Result::is_ok);
+        let apps: Vec<_> = apps.into_iter().map(Result::unwrap).collect();
+        // TODO Don't ignore errors
+        let _errs: Vec<_> = errs.into_iter().map(Result::unwrap_err).collect();
         Ok(AppsDB::new(apps))
     }
 }

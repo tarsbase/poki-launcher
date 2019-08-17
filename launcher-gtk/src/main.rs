@@ -1,18 +1,13 @@
-use fuzzy_matcher::skim::fuzzy_match;
 use lib_poki_launcher::prelude::*;
 
-use rmp_serde as rmp;
-use serde::Serialize;
-use std::fs::File;
-use std::io::Write;
 use std::mem;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-use gdk::enums::key;
 use std::sync::mpsc;
 use std::thread::{self, JoinHandle};
 
+use gdk::enums::key;
 use gio::prelude::*;
 use glib::{self, signal::Inhibit};
 use gtk::prelude::*;
@@ -32,7 +27,7 @@ enum InMsg {
 
 #[derive(Debug, Clone)]
 enum OutMsg {
-    AppList(Vec<(App, usize)>),
+    AppList(Vec<App>),
     Hide,
 }
 
@@ -51,34 +46,16 @@ fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
         loop {
             match input_rx.recv().unwrap() {
                 InMsg::SearchText(text) => {
-                    let mut app_list = apps
-                        .apps
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(i, app)| match fuzzy_match(&app.name, &text) {
-                            Some(score) if score > 0 => Some((app.clone(), score, i)),
-                            _ => None,
-                        })
-                        .collect::<Vec<(App, i64, usize)>>();
-                    app_list.sort_by(|left, right| right.1.cmp(&left.1));
-                    let ret_list: Vec<(App, usize)> =
-                        app_list.into_iter().map(|(app, _, i)| (app, i)).collect();
-                    if let Some(app) = ret_list.get(0) {
-                        to_launch = Some(app.clone());
-                    } else {
-                        to_launch = None;
-                    }
-                    output_tx.send(OutMsg::AppList(ret_list)).unwrap();
+                    let app_list = apps.get_ranked_list(&text);
+                    to_launch = app_list.get(0).map(|app| app.clone());
+                    output_tx.send(OutMsg::AppList(app_list)).unwrap();
                 }
                 InMsg::Run => {
-                    if let Some((app, i)) = &to_launch {
+                    if let Some(app) = &to_launch {
                         // TODO Handle app run failures
                         app.run().unwrap();
-                        apps.update_score(*i, 1.0);
-                        let mut buf = Vec::new();
-                        apps.serialize(&mut rmp::Serializer::new(&mut buf)).unwrap();
-                        let mut file = File::create("apps.db").unwrap();
-                        file.write_all(&buf).unwrap();
+                        apps.update(app);
+                        apps.save(&DB_PATH).unwrap();
                     }
                     output_tx.send(OutMsg::Hide).unwrap();
                     break;
@@ -146,7 +123,7 @@ fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
                     apps.len()
                 };
                 // println!("--------------------------");
-                for (app, _) in &apps[0..end] {
+                for app in &apps[0..end] {
                     // println!("{}", app);
                     store.insert_with_values(None, None, &[0], &[&app.name]);
                 }

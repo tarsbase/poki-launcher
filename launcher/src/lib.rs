@@ -5,6 +5,7 @@ pub mod scan;
 
 use db::AppsDB;
 use failure::Error;
+use fuzzy_matcher::skim::fuzzy_match;
 use rmp_serde as rmp;
 use serde::{Deserialize, Serialize};
 use serde_derive::{Deserialize, Serialize};
@@ -54,6 +55,27 @@ impl AppsDB {
         let mut file = File::create(&path)?;
         file.write_all(&buf)?;
         Ok(())
+    }
+
+    pub fn get_ranked_list(&self, search: &str) -> Vec<App> {
+        let mut app_list = self
+            .apps
+            .iter()
+            .filter_map(|app| match fuzzy_match(&app.name, &search) {
+                Some(score) if score > 0 => {
+                    let mut app = app.clone();
+                    app.score += score as f32;
+                    Some(app)
+                }
+                _ => None,
+            })
+            .collect::<Vec<App>>();
+        app_list.sort_by(|left, right| right.score.partial_cmp(&left.score).unwrap());
+        app_list
+    }
+
+    pub fn update(&mut self, to_update: &App) {
+        self.update_score(&to_update.uuid, 1.0);
     }
 }
 
