@@ -9,8 +9,7 @@ extern "C" {
     int main_cpp(const char* app);
 }
 
-int main_cpp(const char* appPath)
-{
+int main_cpp(const char* appPath) {
     int argc = 1;
     char* argv[1] = { (char*)appPath };
     QGuiApplication app(argc, argv);
