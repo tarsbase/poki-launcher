@@ -39,6 +39,7 @@ Rectangle {
 				Keys.onUpPressed: apps_model.up()
 				Keys.onDownPressed: apps_model.down()
 				Keys.onReturnPressed: run()
+				Keys.onEscapePressed: window.close()
 			}
 		}
 
@@ -69,7 +70,7 @@ Rectangle {
 							Layout.preferredHeight: item.height * 0.8
 							Layout.alignment: Qt.AlignLeft
 							fillMode: Image.PreserveAspectFit
-							source: "firefox.png"
+							source: "file:///" + apps_model.get_icon(icon)
 						}
 
 						Text {

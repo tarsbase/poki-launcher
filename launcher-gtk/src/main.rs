@@ -166,7 +166,7 @@ fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
 //     *to_launch.borrow_mut() = Some(app.0.clone());
 // }
 fn main() {
-    let application = Application::new("info.bengoldberg.poki_launcher", Default::default())
+    let application = Application::new(Some("info.bengoldberg.poki_launcher"), Default::default())
         .expect("failed to initialize GTK application");
 
     application.connect_activate(|app| {

@@ -20,6 +20,9 @@
                 },
                 "uuid": {
                     "type": "QString"
+                },
+                "icon": {
+                    "type": "QString"
                 }
             },
             "functions": {
@@ -44,6 +47,15 @@
                 "run": {
                     "return": "void",
                     "mut": true
+                },
+                "get_icon": {
+                    "arguments": [
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        }
+                    ],
+                    "return": "QString"
                 }
             }
         }

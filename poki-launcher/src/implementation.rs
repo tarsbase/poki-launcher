@@ -1,4 +1,5 @@
 use super::interface::*;
+use gtk::{Application, IconLookupFlags, IconTheme, IconThemeExt};
 use lib_poki_launcher::prelude::*;
 use std::path::Path;
 
@@ -15,9 +16,12 @@ pub struct AppsModel {
 
 impl AppsModelTrait for AppsModel {
     fn new(emit: AppsModelEmitter, model: AppsModelList) -> AppsModel {
+        let _application =
+            Application::new(Some("info.bengoldberg.poki_launcher"), Default::default())
+                .expect("failed to initialize GTK application");
         let db_path = Path::new(&DB_PATH);
         let apps = if db_path.exists() {
-            AppsDB::load(&DB_PATH).unwrap()
+            AppsDB::load(&DB_PATH).expect("Failed to load app db")
         } else {
             let apps = AppsDB::from_desktop_entries().unwrap();
             apps.save(&DB_PATH).expect("Faile to write db to disk");
@@ -60,6 +64,14 @@ impl AppsModelTrait for AppsModel {
     fn uuid(&self, index: usize) -> &str {
         if index < self.list.len() {
             &self.list[index].uuid
+        } else {
+            ""
+        }
+    }
+
+    fn icon(&self, index: usize) -> &str {
+        if index < self.list.len() {
+            &self.list[index].icon
         } else {
             ""
         }
@@ -130,5 +142,18 @@ impl AppsModelTrait for AppsModel {
         self.apps.save(&DB_PATH).unwrap();
         self.list.clear();
         self.model.end_reset_model();
+    }
+
+    fn get_icon(&self, name: String) -> String {
+        if Path::new(&name).is_absolute() {
+            name
+        } else {
+            let theme = IconTheme::get_default().unwrap();
+            let icon = theme
+                .lookup_icon(&name, 128, IconLookupFlags::empty())
+                .expect("Icon Looup failed");
+            let path = (*icon.get_filename().unwrap().clone().to_string_lossy()).to_owned();
+            path
+        }
     }
 }

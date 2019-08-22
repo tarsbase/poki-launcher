@@ -13,6 +13,8 @@ pub enum DesktopEntryParseError {
     MissingName,
     #[fail(display = "Desktop file is missing the 'Exec' parameter")]
     MissingExec,
+    #[fail(display = "Desktop file is missing the 'Icon' parameter")]
+    MissingIcon,
 }
 
 fn strip_args(exec: &str) -> String {
@@ -35,6 +37,10 @@ pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<App, Error> {
         .get("Exec")
         .ok_or(DesktopEntryParseError::MissingExec)?
         .clone();
+    let icon = entry
+        .get("Icon")
+        .ok_or(DesktopEntryParseError::MissingIcon)?
+        .clone();
     let exec = strip_args(&exec);
-    Ok(App::new(name, exec))
+    Ok(App::new(name, icon, exec))
 }

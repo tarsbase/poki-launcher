@@ -27,12 +27,14 @@ pub struct App {
     exec: String,
     score: f32,
     pub uuid: String,
+    pub icon: String,
 }
 
 impl App {
-    pub fn new(name: String, exec: String) -> App {
+    pub fn new(name: String, icon: String, exec: String) -> App {
         App {
             name,
+            icon,
             exec,
             uuid: Uuid::new_v4().to_string(),
             score: 0.0,
