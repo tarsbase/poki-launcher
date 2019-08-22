@@ -5,7 +5,6 @@ use super::App;
 use serde_derive::{Deserialize, Serialize};
 use std::process;
 use std::time::SystemTime;
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AppsDB {
@@ -36,7 +35,7 @@ impl AppsDB {
         (current_time_secs() - self.reference_time) as f32
     }
 
-    pub fn update_score(&mut self, uuid: &Uuid, weight: f32) {
+    pub fn update_score(&mut self, uuid: &String, weight: f32) {
         let elapsed = self.secs_elapsed();
         self.apps
             .iter_mut()

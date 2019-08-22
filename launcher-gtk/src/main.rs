@@ -46,7 +46,7 @@ fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
         loop {
             match input_rx.recv().unwrap() {
                 InMsg::SearchText(text) => {
-                    let app_list = apps.get_ranked_list(&text);
+                    let app_list = apps.get_ranked_list(&text, None);
                     to_launch = app_list.get(0).map(|app| app.clone());
                     output_tx.send(OutMsg::AppList(app_list)).unwrap();
                 }

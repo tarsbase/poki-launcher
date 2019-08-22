@@ -10,6 +10,7 @@ pub struct AppsModel {
     model: AppsModelList,
     list: Vec<App>,
     apps: AppsDB,
+    selected_item: String,
 }
 
 impl AppsModelTrait for AppsModel {
@@ -28,6 +29,7 @@ impl AppsModelTrait for AppsModel {
             model,
             list: Vec::new(),
             apps,
+            selected_item: String::new(),
         }
     }
 
@@ -39,6 +41,14 @@ impl AppsModelTrait for AppsModel {
         self.list.len()
     }
 
+    fn selected(&self) -> &str {
+        &self.selected_item
+    }
+
+    fn set_selected(&mut self, value: String) {
+        self.selected_item = value;
+    }
+
     fn name(&self, index: usize) -> &str {
         if index < self.list.len() {
             &self.list[index].name
@@ -47,17 +57,78 @@ impl AppsModelTrait for AppsModel {
         }
     }
 
-    fn set_name(&mut self, index: usize, name: String) -> bool {
-        if index >= self.list.len() {
-            return false;
+    fn uuid(&self, index: usize) -> &str {
+        if index < self.list.len() {
+            &self.list[index].uuid
+        } else {
+            ""
         }
-        self.list[index].name = name;
-        true
     }
 
     fn search(&mut self, text: String) {
         self.model.begin_reset_model();
-        self.list = self.apps.get_ranked_list(&text);
+        self.list = self.apps.get_ranked_list(&text, Some(MAX_APPS_SHOWN));
+        if self.list.len() > 0 {
+            self.selected_item = self.list[0].uuid.clone();
+        } else {
+            self.selected_item = String::new();
+        }
+        self.model.end_reset_model();
+    }
+
+    fn down(&mut self) {
+        if self.list.len() <= 0 {
+            return;
+        }
+        self.model.begin_reset_model();
+        let (idx, _) = self
+            .list
+            .iter()
+            .enumerate()
+            .find(|(_, app)| app.uuid == self.selected_item)
+            .unwrap();
+        if idx >= self.list.len() - 1 {
+            self.selected_item = self.list[self.list.len() - 1].uuid.clone();
+        } else {
+            self.selected_item = self.list[idx + 1].uuid.clone();
+        }
+        self.model.end_reset_model();
+    }
+
+    fn up(&mut self) {
+        if self.list.len() <= 0 {
+            return;
+        }
+        self.model.begin_reset_model();
+        let (idx, _) = self
+            .list
+            .iter()
+            .enumerate()
+            .find(|(_, app)| app.uuid == self.selected_item)
+            .unwrap();
+        if idx == 0 {
+            self.selected_item = self.list[0].uuid.clone();
+        } else {
+            self.selected_item = self.list[idx - 1].uuid.clone();
+        }
+        self.model.end_reset_model();
+    }
+
+    fn run(&mut self) {
+        if self.list.len() <= 0 {
+            return;
+        }
+        self.model.begin_reset_model();
+        let app = self
+            .list
+            .iter()
+            .find(|app| app.uuid == self.selected_item)
+            .unwrap();
+        // TODO Handle app run failures
+        app.run().unwrap();
+        self.apps.update(app);
+        self.apps.save(&DB_PATH).unwrap();
+        self.list.clear();
         self.model.end_reset_model();
     }
 }

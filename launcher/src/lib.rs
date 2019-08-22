@@ -26,7 +26,7 @@ pub struct App {
     pub name: String,
     exec: String,
     score: f32,
-    uuid: Uuid,
+    pub uuid: String,
 }
 
 impl App {
@@ -34,7 +34,7 @@ impl App {
         App {
             name,
             exec,
-            uuid: Uuid::new_v4(),
+            uuid: Uuid::new_v4().to_string(),
             score: 0.0,
         }
     }
@@ -57,7 +57,7 @@ impl AppsDB {
         Ok(())
     }
 
-    pub fn get_ranked_list(&self, search: &str) -> Vec<App> {
+    pub fn get_ranked_list(&self, search: &str, num_items: Option<usize>) -> Vec<App> {
         let mut app_list = self
             .apps
             .iter()
@@ -71,6 +71,9 @@ impl AppsDB {
             })
             .collect::<Vec<App>>();
         app_list.sort_by(|left, right| right.score.partial_cmp(&left.score).unwrap());
+        if let Some(n) = num_items {
+            app_list = app_list.into_iter().take(n).collect();
+        }
         app_list
     }
 

@@ -5,7 +5,11 @@ Window {
     id: window
     visible: true
     width: 500
-    height: 300
+    height: 500
+    // maximumHeight: height
+    // minimumHeight: height
+    // maximumWidth: width
+    // minimumWidth: width
     title: qsTr("Hello World")
 
     MainForm {

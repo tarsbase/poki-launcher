@@ -8,11 +8,18 @@
     "objects": {
         "AppsModel": {
             "type": "List",
-            "properties": {},
-            "itemProperties": {
-                "name": {
+            "properties": {
+                "selected": {
                     "type": "QString",
                     "write": true
+                }
+            },
+            "itemProperties": {
+                "name": {
+                    "type": "QString"
+                },
+                "uuid": {
+                    "type": "QString"
                 }
             },
             "functions": {
@@ -25,6 +32,18 @@
                             "type": "QString"
                         }
                     ]
+                },
+                "down": {
+                    "return": "void",
+                    "mut": true
+                },
+                "up": {
+                    "return": "void",
+                    "mut": true
+                },
+                "run": {
+                    "return": "void",
+                    "mut": true
                 }
             }
         }

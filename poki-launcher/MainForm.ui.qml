@@ -9,17 +9,23 @@ Rectangle {
 
     color: "#282a36"
 
+	function run() {
+		apps_model.run();
+		input.clear();
+		window.close();
+	}
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 0
-        spacing: 20
+        spacing: 0
 
 		Rectangle {
 			id: input_box
 			color: "#44475a"
 			radius: 0
 			Layout.preferredWidth: window.width
-			Layout.preferredHeight: 50
+			Layout.preferredHeight: window.height * 0.1
 			Layout.alignment: Qt.AlignHCenter
 
 			TextInput {
@@ -28,18 +34,24 @@ Rectangle {
 				color: "#f8f8f2"
 				padding: 10
 				anchors.verticalCenter: input_box.verticalCenter
+				font.pixelSize: window.height * 0.1 * 0.4
+				onTextChanged: apps_model.search(text)
+				Keys.onUpPressed: apps_model.up()
+				Keys.onDownPressed: apps_model.down()
+				Keys.onReturnPressed: run()
 			}
 		}
 
         ListView {
             id: app_list
 			Layout.alignment: Qt.AlignHCenter
-			width: window.width
-			height: window.height * 0.8
+			Layout.preferredWidth: window.width
+			Layout.preferredHeight: window.height * 0.9
+			interactive: false
 
 			model: apps_model
 			delegate: Item {
-				height: 120
+				height: app_list.height * 0.2
 				width: window.width
 
 				Rectangle {
@@ -47,22 +59,24 @@ Rectangle {
 					anchors.topMargin: 1
 					anchors.bottomMargin: 1
 					id: item
-					color: "#282a36"
+					color: (uuid == apps_model.selected) ? "#44475a" : "#282a36"
 					RowLayout {
 						anchors.fill: parent
 
 						Image {
-							//asynchronous: true
-							Layout.preferredWidth: 100
-							Layout.preferredHeight: 100
+							asynchronous: true
+							Layout.preferredWidth: item.height * 0.8
+							Layout.preferredHeight: item.height * 0.8
+							Layout.alignment: Qt.AlignLeft
 							fillMode: Image.PreserveAspectFit
-							source: icon
+							source: "firefox.png"
 						}
 
 						Text {
 							Layout.alignment: Qt.AlignLeft
 							color: "#f8f8f2"
 							text: name
+							font.pixelSize: item.height * 0.4
 						}
 					}
 				}
