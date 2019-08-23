@@ -6,11 +6,13 @@ Window {
     visible: true
     width: 500
     height: 500
-    // maximumHeight: height
-    // minimumHeight: height
-    // maximumWidth: width
-    // minimumWidth: width
     title: qsTr("Hello World")
+
+    Component.onCompleted: {
+        setX(Screen.width / 2 - width / 2 + Screen.virtualX);
+        setY(Screen.height / 2 - height / 2 + Screen.virtualY);
+    }
+
 
     MainForm {
         anchors.fill: parent
