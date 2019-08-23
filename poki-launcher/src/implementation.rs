@@ -137,7 +137,9 @@ impl AppsModelTrait for AppsModel {
             .find(|app| app.uuid == self.selected_item)
             .unwrap();
         // TODO Handle app run failures
-        app.run().unwrap();
+        if let Err(err) = app.run() {
+            eprintln!("Failed to execute app:\n{:#?}", err);
+        }
         self.apps.update(app);
         self.apps.save(&DB_PATH).unwrap();
         self.list.clear();
@@ -149,9 +151,13 @@ impl AppsModelTrait for AppsModel {
             name
         } else {
             let theme = IconTheme::get_default().unwrap();
-            let icon = theme
-                .lookup_icon(&name, 128, IconLookupFlags::empty())
-                .expect("Icon Looup failed");
+            let icon = match theme.lookup_icon(&name, 128, IconLookupFlags::empty()) {
+                Some(icon) => icon,
+                None => {
+                    eprintln!("No icon found for {}", name);
+                    return String::new();
+                }
+            };
             let path = (*icon.get_filename().unwrap().clone().to_string_lossy()).to_owned();
             path
         }
