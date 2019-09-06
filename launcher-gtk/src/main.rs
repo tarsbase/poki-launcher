@@ -61,6 +61,7 @@ fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
                     break;
                 }
                 InMsg::Exit => {
+                    output_tx.send(OutMsg::Hide).unwrap();
                     break;
                 }
             }
@@ -108,6 +109,8 @@ fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
     entry.connect_key_press_event(move |_entry, event| {
         if event.get_keyval() == key::Return {
             run_tx.send(InMsg::Run).unwrap();
+        } else if event.get_keyval() == key::Escape {
+            run_tx.send(InMsg::Exit).unwrap();
         }
         Inhibit(false)
     });
