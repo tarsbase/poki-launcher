@@ -1,6 +1,6 @@
-import QtQuick 2.13
+import QtQuick 2.6
 import PokiLauncher 1.0
-import QtQuick.Layouts 1.13
+import QtQuick.Layouts 1.0
 
 Rectangle {
     AppsModel {
