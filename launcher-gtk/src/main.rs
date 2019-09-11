@@ -9,10 +9,15 @@ use std::thread::{self, JoinHandle};
 
 use gdk::enums::key;
 use gio::prelude::*;
+use gio::ListStore;
 use glib::{self, signal::Inhibit};
 use gtk::prelude::*;
-use gtk::*;
-use lazy_static::*;
+use gtk::{
+    Application, ApplicationWindow, CssProvider, Entry, ListBox, StyleContext,
+    STYLE_PROVIDER_PRIORITY_USER,
+};
+use lazy_static::lazy_static;
+use row_data::RowData;
 
 const DB_PATH: &'static str = "apps.db";
 const MAX_APPS_SHOWN: usize = 5;
@@ -72,27 +77,30 @@ fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
     let window = ApplicationWindow::new(application);
     let top_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
     let entry = Entry::new();
-    let tree = TreeView::new();
-    let column_types = [String::static_type()];
-    let store = TreeStore::new(&column_types);
-    let col = TreeViewColumn::new();
-    let renderer = CellRendererText::new();
-    col.pack_start(&renderer, true);
-    col.add_attribute(&renderer, "text", 0);
-    tree.append_column(&col);
-    tree.set_model(Some(&store));
-    tree.set_headers_visible(false);
-    // Initalize with 5 empty entryies for spacing
-    for _ in 0..5 {
-        store.insert_with_values(None, None, &[0], &[&" ".to_owned()]);
-    }
+    let listbox = ListBox::new();
+    // let tree = TreeView::new();
+    let types = [String::static_type()];
+    let store = ListStore::new(RowData::static_type());
+    // let model: ListModel = store.upcast();
+    listbox.bind_model(Some(&store), |item| {
+        let item = item
+            .downcast_ref::<RowData>()
+            .expect("Row data is of wrong type");
+        let row = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        let label = gtk::Label::new(None);
+        item.bind_property("name", &label, "label")
+            .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE)
+            .build();
+        row.pack_end(&label, true, true, 0);
+        row.upcast()
+    });
 
     window.set_title("Poki Launcher");
     window.set_default_size(350, 70);
     window.set_position(gtk::WindowPosition::Center);
 
     top_box.pack_start(&entry, true, true, 0);
-    top_box.pack_end(&tree, true, true, 0);
+    top_box.pack_end(&listbox, true, true, 0);
     window.add(&top_box);
 
     let search_tx = input_tx.clone();
@@ -119,7 +127,7 @@ fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
     output_rx.attach(None, move |msg| {
         match msg {
             OutMsg::AppList(apps) => {
-                store.clear();
+                store.remove_all();
                 let end = if apps.len() > MAX_APPS_SHOWN {
                     MAX_APPS_SHOWN
                 } else {
@@ -128,10 +136,10 @@ fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
                 // println!("--------------------------");
                 for app in &apps[0..end] {
                     // println!("{}", app);
-                    store.insert_with_values(None, None, &[0], &[&app.name]);
+                    store.append(&RowData::new(&app.name));
                 }
                 for _ in end..5 {
-                    store.insert_with_values(None, None, &[0], &[&" ".to_owned()]);
+                    store.append(&RowData::new(" "))
                 }
                 if apps.len() > 0 {}
             }
@@ -162,7 +170,7 @@ fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
     window.present();
     window.set_keep_above(true);
     // entry.grab_default();
-    tree.set_sensitive(false);
+    // tree.set_sensitive(false);
 }
 
 // if let Some(app) = app_list.get(0) {
@@ -186,4 +194,100 @@ fn main() {
     });
 
     application.run(&[]);
+}
+
+mod row_data {
+    use super::*;
+
+    use glib::subclass;
+    use glib::subclass::prelude::*;
+    use glib::translate::*;
+    use glib::{glib_object_impl, glib_object_subclass, glib_object_wrapper, glib_wrapper};
+
+    mod imp {
+        use super::*;
+        use std::cell::RefCell;
+
+        pub struct RowData {
+            name: RefCell<Option<String>>,
+        }
+
+        static PROPERTIES: [subclass::Property; 1] = [subclass::Property("name", |name| {
+            glib::ParamSpec::string(
+                name,
+                "Name",
+                "Name",
+                None, // Default value
+                glib::ParamFlags::READWRITE,
+            )
+        })];
+
+        impl ObjectSubclass for RowData {
+            const NAME: &'static str = "RowData";
+            type ParentType = glib::Object;
+            type Instance = subclass::simple::InstanceStruct<Self>;
+            type Class = subclass::simple::ClassStruct<Self>;
+
+            glib_object_subclass!();
+
+            // Called exactly once before the first instantiation of an instance. This
+            // sets up any type-specific things, in this specific case it installs the
+            // properties so that GObject knows about their existence and they can be
+            // used on instances of our type
+            fn class_init(klass: &mut Self::Class) {
+                klass.install_properties(&PROPERTIES);
+            }
+
+            // Called once at the very beginning of instantiation of each instance and
+            // creates the data structure that contains all our state
+            fn new() -> Self {
+                Self {
+                    name: RefCell::new(None),
+                }
+            }
+        }
+
+        impl ObjectImpl for RowData {
+            glib_object_impl!();
+
+            fn set_property(&self, _obj: &glib::Object, id: usize, value: &glib::Value) {
+                let prop = &PROPERTIES[id];
+
+                match *prop {
+                    subclass::Property("name", ..) => {
+                        let name = value.get();
+                        self.name.replace(name);
+                    }
+                    _ => unimplemented!(),
+                }
+            }
+
+            fn get_property(&self, _obj: &glib::Object, id: usize) -> Result<glib::Value, ()> {
+                let prop = &PROPERTIES[id];
+
+                match *prop {
+                    subclass::Property("name", ..) => Ok(self.name.borrow().to_value()),
+                    _ => unimplemented!(),
+                }
+            }
+        }
+    }
+
+    glib_wrapper! {
+        pub struct RowData(Object<subclass::simple::InstanceStruct<imp::RowData>,
+            subclass::simple::ClassStruct<imp::RowData>, RowDataClass>);
+
+        match fn {
+            get_type => || imp::RowData::get_type().to_glib(),
+        }
+    }
+
+    impl RowData {
+        pub fn new(name: &str) -> RowData {
+            glib::Object::new(Self::static_type(), &[("name", &name)])
+                .expect("Failed to create row data")
+                .downcast()
+                .expect("Created row data is of wrong type")
+        }
+    }
 }
