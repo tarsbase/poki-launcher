@@ -4,4 +4,5 @@ members = [
 	"launcher",
 	"launcher-gtk",
 	"poki-launcher",
+	"poki-launcher-notifier",
 ]

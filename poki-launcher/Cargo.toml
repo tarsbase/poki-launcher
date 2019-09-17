@@ -8,7 +8,9 @@ edition = "2018"
 [dependencies]
 libc = "0.2"
 gtk = "0.7"
+structopt = "0.3"
 lib-poki-launcher = { path = "../launcher" }
+poki-launcher-notifier = { path = "../poki-launcher-notifier" }
 
 [build-dependencies]
 rust_qt_binding_generator = "0.3"

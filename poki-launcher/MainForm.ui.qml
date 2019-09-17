@@ -4,15 +4,10 @@ import QtQuick.Layouts 1.0
 Rectangle {
     color: "#282a36"
 
-	function hide_window() {
-		apps_model.visible = false;
-		window.visible = false;
-	}
-
 	function run() {
 		apps_model.run();
 		input.clear();
-		hide_window();
+		apps_model.hide();
 	}
 
     ColumnLayout {
@@ -39,7 +34,7 @@ Rectangle {
 				Keys.onUpPressed: apps_model.up()
 				Keys.onDownPressed: apps_model.down()
 				Keys.onReturnPressed: run()
-				Keys.onEscapePressed: hide_window()
+				Keys.onEscapePressed: apps_model.hide()
 			}
 		}
 

@@ -52,6 +52,10 @@
                     "return": "void",
                     "mut": true
                 },
+                "hide": {
+                    "return": "void",
+                    "mut": true
+                },
                 "get_icon": {
                     "arguments": [
                         {

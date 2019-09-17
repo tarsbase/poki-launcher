@@ -1,6 +1,7 @@
 use super::interface::*;
 use gtk::{Application, IconLookupFlags, IconTheme, IconThemeExt};
 use lib_poki_launcher::prelude::*;
+use poki_launcher_notifier::Notifier;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -18,9 +19,10 @@ pub struct AppsModel {
     window_visible: Arc<AtomicBool>,
 }
 
-fn emit_apps_model(mut emit: AppsModelEmitter, window_visible: Arc<AtomicBool>) {
-    thread::spawn(move || {
-        thread::sleep(std::time::Duration::from_secs(1));
+fn setup_notifier(mut emit: AppsModelEmitter, window_visible: Arc<AtomicBool>) {
+    let rx = Notifier::start();
+    thread::spawn(move || loop {
+        rx.recv().unwrap();
         window_visible.store(true, Ordering::Relaxed);
         emit.visible_changed();
     });
@@ -40,8 +42,8 @@ impl AppsModelTrait for AppsModel {
             apps
         };
 
-        let window_visible = Arc::new(AtomicBool::new(false));
-        emit_apps_model(emit.clone(), window_visible.clone());
+        let window_visible = Arc::new(AtomicBool::new(true));
+        setup_notifier(emit.clone(), window_visible.clone());
 
         AppsModel {
             emit,
@@ -185,5 +187,10 @@ impl AppsModelTrait for AppsModel {
             let path = (*icon.get_filename().unwrap().clone().to_string_lossy()).to_owned();
             path
         }
+    }
+
+    fn hide(&mut self) {
+        self.set_visible(false);
+        self.emit.visible_changed();
     }
 }
