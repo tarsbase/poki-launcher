@@ -78,30 +78,30 @@ fn build_ui(application: &gtk::Application, mut apps: AppsDB) {
     let top_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
     let entry = Entry::new();
     let listbox = ListBox::new();
-    // let tree = TreeView::new();
-    let types = [String::static_type()];
     let store = ListStore::new(RowData::static_type());
-    // let model: ListModel = store.upcast();
+    window.set_title("Poki Launcher");
+    window.set_default_size(500, 500);
+    window.set_position(gtk::WindowPosition::Center);
+
+    top_box.pack_start(&entry, false, false, 0);
+    top_box.pack_end(&listbox, false, false, 0);
+    window.add(&top_box);
+
     listbox.bind_model(Some(&store), |item| {
+        let row = gtk::ListBoxRow::new();
         let item = item
             .downcast_ref::<RowData>()
             .expect("Row data is of wrong type");
-        let row = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let label = gtk::Label::new(None);
         item.bind_property("name", &label, "label")
             .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE)
             .build();
-        row.pack_end(&label, true, true, 0);
+        hbox.pack_end(&label, true, true, 0);
+        row.add(&hbox);
+        row.show_all();
         row.upcast()
     });
-
-    window.set_title("Poki Launcher");
-    window.set_default_size(350, 70);
-    window.set_position(gtk::WindowPosition::Center);
-
-    top_box.pack_start(&entry, true, true, 0);
-    top_box.pack_end(&listbox, true, true, 0);
-    window.add(&top_box);
 
     let search_tx = input_tx.clone();
     entry.connect_changed(move |entry| {

@@ -2,6 +2,9 @@ use super::interface::*;
 use gtk::{Application, IconLookupFlags, IconTheme, IconThemeExt};
 use lib_poki_launcher::prelude::*;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread;
 
 const DB_PATH: &'static str = "apps.db";
 const MAX_APPS_SHOWN: usize = 5;
@@ -12,10 +15,19 @@ pub struct AppsModel {
     list: Vec<App>,
     apps: AppsDB,
     selected_item: String,
+    window_visible: Arc<AtomicBool>,
+}
+
+fn emit_apps_model(mut emit: AppsModelEmitter, window_visible: Arc<AtomicBool>) {
+    thread::spawn(move || {
+        thread::sleep(std::time::Duration::from_secs(1));
+        window_visible.store(true, Ordering::Relaxed);
+        emit.visible_changed();
+    });
 }
 
 impl AppsModelTrait for AppsModel {
-    fn new(emit: AppsModelEmitter, model: AppsModelList) -> AppsModel {
+    fn new(mut emit: AppsModelEmitter, model: AppsModelList) -> AppsModel {
         let _application =
             Application::new(Some("info.bengoldberg.poki_launcher"), Default::default())
                 .expect("failed to initialize GTK application");
@@ -28,12 +40,16 @@ impl AppsModelTrait for AppsModel {
             apps
         };
 
+        let window_visible = Arc::new(AtomicBool::new(false));
+        emit_apps_model(emit.clone(), window_visible.clone());
+
         AppsModel {
             emit,
             model,
             list: Vec::new(),
             apps,
             selected_item: String::new(),
+            window_visible,
         }
     }
 
@@ -51,6 +67,14 @@ impl AppsModelTrait for AppsModel {
 
     fn set_selected(&mut self, value: String) {
         self.selected_item = value;
+    }
+
+    fn visible(&self) -> bool {
+        self.window_visible.load(Ordering::Relaxed)
+    }
+
+    fn set_visible(&mut self, value: bool) {
+        self.window_visible.store(value, Ordering::Relaxed);
     }
 
     fn name(&self, index: usize) -> &str {

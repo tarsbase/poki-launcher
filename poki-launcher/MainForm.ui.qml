@@ -1,18 +1,18 @@
 import QtQuick 2.6
-import PokiLauncher 1.0
 import QtQuick.Layouts 1.0
 
 Rectangle {
-    AppsModel {
-        id: apps_model
-    }
-
     color: "#282a36"
+
+	function hide_window() {
+		apps_model.visible = false;
+		window.visible = false;
+	}
 
 	function run() {
 		apps_model.run();
 		input.clear();
-		window.close();
+		hide_window();
 	}
 
     ColumnLayout {
@@ -39,7 +39,7 @@ Rectangle {
 				Keys.onUpPressed: apps_model.up()
 				Keys.onDownPressed: apps_model.down()
 				Keys.onReturnPressed: run()
-				Keys.onEscapePressed: window.close()
+				Keys.onEscapePressed: hide_window()
 			}
 		}
 
