@@ -33,12 +33,14 @@ impl AppsModelTrait for AppsModel {
         let _application =
             Application::new(Some("info.bengoldberg.poki_launcher"), Default::default())
                 .expect("failed to initialize GTK application");
+        let config = Config::load().unwrap();
         let db_path = Path::new(&DB_PATH);
         let apps = if db_path.exists() {
             AppsDB::load(&DB_PATH).expect("Failed to load app db")
         } else {
-            let apps = AppsDB::from_desktop_entries().unwrap();
-            apps.save(&DB_PATH).expect("Faile to write db to disk");
+            let apps =
+                AppsDB::from_desktop_entries(desktop_entires(&config.app_paths).unwrap()).unwrap();
+            apps.save(&DB_PATH).expect("Failed to write db to disk");
             apps
         };
 

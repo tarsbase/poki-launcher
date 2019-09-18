@@ -14,3 +14,6 @@ rmp-serde = "0.13"
 fuzzy-matcher = "0.2"
 itertools = "0.8"
 uuid = { version = "0.7", features = ["serde", "v4"]}
+config = "0.9"
+directories = "2.0"
+lazy_static = "1.4"

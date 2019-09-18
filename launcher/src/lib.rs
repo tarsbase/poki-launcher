@@ -1,23 +1,34 @@
+pub mod config;
 pub mod db;
 pub mod desktop_entry;
 pub mod runner;
 pub mod scan;
 
 use db::AppsDB;
+use directories::{BaseDirs, ProjectDirs};
 use failure::Error;
 use fuzzy_matcher::skim::fuzzy_match;
+use lazy_static::lazy_static;
 use rmp_serde as rmp;
 use serde::{Deserialize, Serialize};
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use uuid::prelude::*;
 
 pub mod prelude {
     pub use crate::db::AppsDB;
     pub use crate::App;
+    pub use crate::scan::*;
+    pub use crate::config::Config;
+}
+
+lazy_static! {
+    pub static ref DIRS: ProjectDirs =
+        ProjectDirs::from("info", "Ben Goldberg", "Poki Launcher").unwrap();
+    pub static ref HOME_PATH: PathBuf = BaseDirs::new().unwrap().home_dir().to_owned();
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

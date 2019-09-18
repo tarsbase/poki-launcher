@@ -1,0 +1,6 @@
+{
+    app_paths: [
+        "/usr/share/applications/"
+        // ~/.local/share/applications/
+    ]
+}
