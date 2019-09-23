@@ -3,23 +3,15 @@ pub mod interface {
     include!(concat!(env!("OUT_DIR"), "/src/interface.rs"));
 }
 
-use structopt::StructOpt;
-
-#[derive(StructOpt, Debug)]
-#[structopt(name = "basic")]
-struct Opt {
-    #[structopt(long)]
-    show: bool,
-}
+use poki_launcher_notifier as notifier;
 
 extern "C" {
     fn main_cpp(app: *const ::std::os::raw::c_char);
 }
 
 fn main() {
-    let opt = Opt::from_args();
-    if opt.show {
-        poki_launcher_notifier::notify().expect("Failed to send dbus message");
+    if notifier::is_running() {
+        notifier::notify().expect("Failed to signal other process");
     } else {
         use std::ffi::CString;
         let app_name = ::std::env::args().next().unwrap();

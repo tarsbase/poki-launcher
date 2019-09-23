@@ -1,50 +1,69 @@
 use std::error::Error;
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
+use std::sync::mpsc::{self, Receiver};
 use std::thread;
-use std::time::Duration;
 
-pub struct Notifier;
+const LOCK_FILE_PATH: &'static str = "/tmp/poki-launcher.pid";
 
-const DOMAIN: &str = "info.bengoldberg.poki_launcher";
-const OBJ_PATH: &str = "/launcher";
-const METHOD: &str = "show";
+pub enum Msg {
+    Show,
+    Exit,
+}
+
+pub fn is_running() -> bool {
+    Path::new(&LOCK_FILE_PATH).exists()
+}
+
+pub struct Notifier(Receiver<Msg>);
 
 impl Notifier {
-    pub fn start() -> Receiver<()> {
+    pub fn start() -> Result<Notifier, Box<dyn Error>> {
+        use nix::unistd::getpid;
+        use signal_hook::iterator::Signals;
+        use signal_hook::*;
+
+        let mut file = File::create(&LOCK_FILE_PATH)?;
+        write!(file, "{}", getpid())?;
+        drop(file);
+        let signals = Signals::new(&[SIGUSR1, SIGINT, SIGTERM, SIGQUIT])?;
         let (tx, rx) = mpsc::channel();
         thread::spawn(move || {
-            Notifier::start_bg(tx).expect("Failed to start dbus server");
+            for signal in signals.forever() {
+                match signal {
+                    SIGUSR1 => tx.send(Msg::Show).expect("Failed to send show message"),
+                    SIGINT | SIGTERM | SIGQUIT => {
+                        tx.send(Msg::Exit).expect("Failed to send show message");
+                        break;
+                    }
+                    _ => (),
+                }
+            }
         });
-        rx
+        Ok(Notifier(rx))
     }
 
-    fn start_bg(tx: Sender<()>) -> Result<(), Box<dyn Error>> {
-        use dbus::{blocking::Connection, tree::Factory};
-        let mut c = Connection::new_session()?;
-        c.request_name(DOMAIN, false, true, false)?;
-        let f = Factory::new_fn::<()>();
-        let tree = f.tree(()).add(
-            f.object_path(OBJ_PATH, ())
-                .introspectable()
-                .add(
-                    f.interface(DOMAIN, ())
-                        .add_m(f.method(METHOD, (), move |m| {
-                            tx.send(()).expect("Failed to send show message");
-                            Ok(vec![m.msg.method_return()])
-                        })),
-                ),
-        );
-        tree.start_receive(&c);
-        loop {
-            c.process(Duration::from_millis(1000))?;
+    pub fn recv(&self) -> Result<Msg, std::sync::mpsc::RecvError> {
+        self.0.recv()
+    }
+}
+
+impl Drop for Notifier {
+    fn drop(&mut self) {
+        if is_running() {
+            std::fs::remove_file(&LOCK_FILE_PATH).expect("Failed to delete lock file");
         }
     }
 }
 
 pub fn notify() -> Result<(), Box<dyn Error>> {
-    use dbus::ffidisp::Connection;
-    let conn = Connection::new_session()?;
-    let obj = conn.with_path(DOMAIN, OBJ_PATH, 5000);
-    obj.method_call(DOMAIN, METHOD, ())?;
+    use nix::sys::signal::{kill, Signal};
+    use nix::unistd::Pid;
+
+    let mut file = File::open(&LOCK_FILE_PATH)?;
+    let mut buf = String::new();
+    file.read_to_string(&mut buf)?;
+    kill(Pid::from_raw(buf.parse()?), Signal::SIGUSR1)?;
     Ok(())
 }

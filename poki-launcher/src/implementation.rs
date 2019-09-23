@@ -1,7 +1,8 @@
 use super::interface::*;
 use gtk::{Application, IconLookupFlags, IconTheme, IconThemeExt};
 use lib_poki_launcher::prelude::*;
-use poki_launcher_notifier::Notifier;
+use poki_launcher_notifier::{self as notifier, Notifier};
+use std::error::Error;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -19,13 +20,25 @@ pub struct AppsModel {
     window_visible: Arc<AtomicBool>,
 }
 
-fn setup_notifier(mut emit: AppsModelEmitter, window_visible: Arc<AtomicBool>) {
-    let rx = Notifier::start();
+fn setup_notifier(
+    mut emit: AppsModelEmitter,
+    window_visible: Arc<AtomicBool>,
+) -> Result<(), Box<dyn Error>> {
+    let rx = Notifier::start()?;
     thread::spawn(move || loop {
-        rx.recv().unwrap();
-        window_visible.store(true, Ordering::Relaxed);
-        emit.visible_changed();
+        use notifier::Msg;
+        match rx.recv().unwrap() {
+            Msg::Show => {
+                window_visible.store(true, Ordering::Relaxed);
+                emit.visible_changed();
+            }
+            Msg::Exit => {
+                drop(rx);
+                std::process::exit(0);
+            }
+        }
     });
+    Ok(())
 }
 
 impl AppsModelTrait for AppsModel {
