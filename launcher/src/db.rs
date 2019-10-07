@@ -15,7 +15,7 @@ pub struct AppsDB {
 
 #[allow(dead_code)]
 impl AppsDB {
-    pub fn new(apps: Vec<App>) -> AppsDB {
+    pub fn new(apps: Vec<App>) -> Self {
         AppsDB {
             apps,
             reference_time: current_time_secs(),
@@ -42,6 +42,16 @@ impl AppsDB {
             .find(|app| app.uuid == *uuid)
             .unwrap()
             .update_frecency(weight, elapsed, self.half_life);
+    }
+
+    pub fn merge(&mut self, apps_to_merge: &Vec<App>) -> Self {
+        for to_merge in apps_to_merge {
+            match self.apps.iter().position(|app| app == to_merge) {
+                Some(idx) => self.apps[idx].merge(to_merge),
+                None => self.apps.push(to_merge.clone()),
+            }
+        }
+        unimplemented!();
     }
 }
 

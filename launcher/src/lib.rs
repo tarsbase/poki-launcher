@@ -12,6 +12,7 @@ use lazy_static::lazy_static;
 use rmp_serde as rmp;
 use serde::{Deserialize, Serialize};
 use serde_derive::{Deserialize, Serialize};
+use std::cmp::{Eq, PartialEq};
 use std::fmt;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -19,10 +20,10 @@ use std::path::{Path, PathBuf};
 use uuid::prelude::*;
 
 pub mod prelude {
-    pub use crate::db::AppsDB;
-    pub use crate::App;
-    pub use crate::scan::*;
     pub use crate::config::Config;
+    pub use crate::db::AppsDB;
+    pub use crate::scan::*;
+    pub use crate::App;
 }
 
 lazy_static! {
@@ -51,7 +52,21 @@ impl App {
             score: 0.0,
         }
     }
+
+    pub fn merge(&mut self, other: &App) {
+        self.name = other.name.clone();
+        self.icon = other.icon.clone();
+        self.exec = other.exec.clone();
+    }
 }
+
+impl PartialEq for App {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name && self.exec == other.exec && self.icon == other.icon
+    }
+}
+
+impl Eq for App {}
 
 impl AppsDB {
     pub fn load(path: impl AsRef<Path>) -> Result<AppsDB, Error> {

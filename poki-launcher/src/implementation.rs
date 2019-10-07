@@ -51,14 +51,14 @@ impl AppsModelTrait for AppsModel {
         let apps = if db_path.exists() {
             AppsDB::load(&DB_PATH).expect("Failed to load app db")
         } else {
-            let apps =
-                AppsDB::from_desktop_entries(desktop_entires(&config.app_paths).unwrap()).unwrap();
+            let apps = AppsDB::from_desktop_entries(&config.app_paths)
+                .expect("Scan for desktop entries failed");
             apps.save(&DB_PATH).expect("Failed to write db to disk");
             apps
         };
 
         let window_visible = Arc::new(AtomicBool::new(true));
-        setup_notifier(emit.clone(), window_visible.clone());
+        setup_notifier(emit.clone(), window_visible.clone()).expect("Failed to setup notifier");
 
         AppsModel {
             emit,
