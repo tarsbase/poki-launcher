@@ -3,20 +3,45 @@ pub mod interface {
     include!(concat!(env!("OUT_DIR"), "/src/interface.rs"));
 }
 
+use implementation::DB_PATH;
+use lib_poki_launcher::prelude::AppsDB;
 use poki_launcher_notifier as notifier;
+use structopt::StructOpt;
 
 extern "C" {
     fn main_cpp(app: *const std::os::raw::c_char);
 }
 
+#[derive(Debug, StructOpt)]
+#[structopt(name = "poki-launcher", about = "Poki App Launcher")]
+struct Opt {
+    #[structopt(long)]
+    dump_db: bool,
+}
+
 fn main() {
-    if notifier::is_running() {
-        if let Err(e) = notifier::notify() {
-            eprintln!("{}", e);
-            start_ui();
+    let opt = Opt::from_args();
+    if opt.dump_db {
+        use std::fs::File;
+        use std::path::Path;
+
+        if Path::new(&DB_PATH).exists() {
+            let mut file = File::open(&DB_PATH).expect("Failed to open db file");
+            let data: AppsDB = rmp_serde::from_read(&mut file).expect("Failed to parse db");
+            println!("{}", serde_json::to_string_pretty(&data).unwrap());
+        } else {
+            eprintln!("Database file doesn't exit");
+            std::process::exit(1);
         }
     } else {
-        start_ui();
+        if notifier::is_running() {
+            if let Err(e) = notifier::notify() {
+                eprintln!("{}", e);
+                start_ui();
+            }
+        } else {
+            start_ui();
+        }
     }
 }
 

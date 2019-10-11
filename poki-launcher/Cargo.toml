@@ -11,6 +11,9 @@ gtk = "0.7"
 nix = "0.15"
 lib-poki-launcher = { path = "../launcher" }
 poki-launcher-notifier = { path = "../poki-launcher-notifier" }
+structopt = "0.3"
+rmp-serde = "0.13"
+serde_json = "1.0"
 
 [build-dependencies]
 rust_qt_binding_generator = "0.3"

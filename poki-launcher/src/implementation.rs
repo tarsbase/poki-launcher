@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 
-const DB_PATH: &'static str = "apps.db";
+pub const DB_PATH: &'static str = "apps.db";
 const MAX_APPS_SHOWN: usize = 5;
 
 pub struct AppsModel {
