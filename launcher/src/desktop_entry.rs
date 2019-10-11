@@ -1,7 +1,6 @@
 use super::App;
 use failure::{Error, Fail};
 use ini::Ini;
-use itertools::Itertools;
 use std::path::Path;
 
 #[allow(dead_code)]
@@ -15,12 +14,6 @@ pub enum DesktopEntryParseError {
     MissingExec,
     #[fail(display = "Desktop file is missing the 'Icon' parameter")]
     MissingIcon,
-}
-
-fn strip_args(exec: &str) -> String {
-    exec.split(" ")
-        .filter(|item| !item.starts_with("%"))
-        .join(" ")
 }
 
 pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<App, Error> {
@@ -41,6 +34,5 @@ pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<App, Error> {
         .get("Icon")
         .ok_or(DesktopEntryParseError::MissingIcon)?
         .clone();
-    let exec = strip_args(&exec);
     Ok(App::new(name, icon, exec))
 }
