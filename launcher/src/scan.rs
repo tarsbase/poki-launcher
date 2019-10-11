@@ -38,7 +38,7 @@ impl AppsDB {
     }
 
     pub fn rescan_desktop_entries(&mut self, paths: &Vec<String>) -> Result<(), Error> {
-        self.merge(&scan_desktop_entries(paths)?);
+        self.merge(scan_desktop_entries(paths)?);
         Ok(())
     }
 }

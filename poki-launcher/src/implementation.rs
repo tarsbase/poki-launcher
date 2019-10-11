@@ -18,6 +18,7 @@ pub struct AppsModel {
     apps: AppsDB,
     selected_item: String,
     window_visible: Arc<AtomicBool>,
+    config: Config,
 }
 
 fn setup_notifier(
@@ -67,6 +68,7 @@ impl AppsModelTrait for AppsModel {
             apps,
             selected_item: String::new(),
             window_visible,
+            config,
         }
     }
 
@@ -116,6 +118,14 @@ impl AppsModelTrait for AppsModel {
         } else {
             ""
         }
+    }
+
+    fn scan(&mut self) {
+        // TODO Log errors
+        println!("Scanning...");
+        let _ = self.apps.rescan_desktop_entries(&self.config.app_paths);
+        let _ = self.apps.save(&DB_PATH);
+        println!("Scanning...done");
     }
 
     fn search(&mut self, text: String) {

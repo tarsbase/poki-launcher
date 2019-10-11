@@ -24,8 +24,8 @@ Window {
             raise();
             requestActivate();
             show()
-            active = true;
-            focus = true;
+            // active = true;
+            // focus = true;
         }
     }
 

@@ -10,6 +10,18 @@ Rectangle {
 		apps_model.hide();
 	}
 
+	function scan() {
+		window.title = qsTr("Poki Launcher - Scanning...");
+		apps_model.scan();
+		window.title = qsTr("Poki Launcher");
+		apps_model.search(input.text)
+	}
+
+	Shortcut {
+		sequence: "F5"
+		onActivated: scan()
+	}
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 0

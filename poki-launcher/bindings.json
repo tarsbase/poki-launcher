@@ -40,6 +40,10 @@
                         }
                     ]
                 },
+                "scan": {
+                    "return": "void",
+                    "mut": true
+                },
                 "down": {
                     "return": "void",
                     "mut": true

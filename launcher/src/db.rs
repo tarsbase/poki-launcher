@@ -44,14 +44,17 @@ impl AppsDB {
             .update_frecency(weight, elapsed, self.half_life);
     }
 
-    pub fn merge(&mut self, apps_to_merge: &Vec<App>) -> Self {
-        for to_merge in apps_to_merge {
-            match self.apps.iter().position(|app| app == to_merge) {
-                Some(idx) => self.apps[idx].merge(to_merge),
-                None => self.apps.push(to_merge.clone()),
-            }
-        }
-        unimplemented!();
+    pub fn merge(&mut self, mut apps_to_merge: Vec<App>) {
+        let apps = std::mem::replace(&mut self.apps, Vec::new());
+        self.apps = apps
+            .into_iter()
+            .filter(|app| apps_to_merge.contains(app))
+            .collect();
+        apps_to_merge = apps_to_merge
+            .into_iter()
+            .filter(|app| !self.apps.contains(app))
+            .collect();
+        self.apps.extend(apps_to_merge);
     }
 }
 
