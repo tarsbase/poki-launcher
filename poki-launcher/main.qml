@@ -24,9 +24,11 @@ Window {
             raise();
             requestActivate();
             show()
-            // active = true;
-            // focus = true;
         }
+    }
+
+    onClosing: {
+        apps_model.exit();
     }
 
 

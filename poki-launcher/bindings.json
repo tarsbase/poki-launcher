@@ -68,6 +68,10 @@
                         }
                     ],
                     "return": "QString"
+                },
+                "exit": {
+                    "return": "void",
+                    "mut": true
                 }
             }
         }

@@ -218,4 +218,11 @@ impl AppsModelTrait for AppsModel {
         self.set_visible(false);
         self.emit.visible_changed();
     }
+
+    fn exit(&mut self) {
+        use nix::sys::signal::{kill, Signal};
+        use nix::unistd::Pid;
+
+        let _ = kill(Pid::this(), Signal::SIGINT);
+    }
 }

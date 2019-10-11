@@ -11,13 +11,20 @@ extern "C" {
 
 fn main() {
     if notifier::is_running() {
-        notifier::notify().expect("Failed to signal other process");
-    } else {
-        use std::ffi::CString;
-        let app_name = std::env::args().next().unwrap();
-        let app_name = CString::new(app_name).unwrap();
-        unsafe {
-            main_cpp(app_name.as_ptr());
+        if let Err(e) = notifier::notify() {
+            eprintln!("{}", e);
+            start_ui();
         }
+    } else {
+        start_ui();
+    }
+}
+
+fn start_ui() {
+    use std::ffi::CString;
+    let app_name = std::env::args().next().unwrap();
+    let app_name = CString::new(app_name).unwrap();
+    unsafe {
+        main_cpp(app_name.as_ptr());
     }
 }
