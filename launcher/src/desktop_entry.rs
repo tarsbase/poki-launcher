@@ -16,6 +16,25 @@ pub enum DesktopEntryParseError {
     MissingIcon,
 }
 
+fn remove_if_true(item: Option<&String>, app: App) -> Option<App> {
+    match item {
+        Some(text) => match text.parse() {
+            Ok(item) => {
+                if item {
+                    None
+                } else {
+                    Some(app)
+                }
+            }
+            Err(_) => {
+                eprintln!("NoDisplay has a invalid value: {}", text);
+                Some(app)
+            }
+        },
+        None => Some(app),
+    }
+}
+
 pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<App>, Error> {
     // TODO Finish implementation
     let file = Ini::load_from_file(path)?;
@@ -35,20 +54,6 @@ pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<App>, Error> 
         .ok_or(DesktopEntryParseError::MissingIcon)?
         .clone();
     let app = App::new(name, icon, exec);
-    match entry.get("NoDisplay") {
-        Some(text) => match text.parse() {
-            Ok(no_display) => {
-                if no_display {
-                    Ok(None)
-                } else {
-                    Ok(Some(app))
-                }
-            }
-            Err(e) => {
-                eprintln!("NoDisplay has a invalid value: {}", text);
-                Ok(Some(app))
-            }
-        },
-        None => Ok(Some(app)),
-    }
+    Ok(remove_if_true(entry.get("NoDisplay"), app.clone())
+        .or(remove_if_true(entry.get("Hidden"), app)))
 }
