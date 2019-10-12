@@ -185,7 +185,8 @@ fn main() {
         let apps = if db_path.exists() {
             AppsDB::load(&DB_PATH).unwrap()
         } else {
-            let apps = AppsDB::from_desktop_entries().unwrap();
+            let apps =
+                AppsDB::from_desktop_entries(&vec!["/usr/share/applications".to_owned()]).unwrap();
             apps.save(&DB_PATH).expect("Faile to write db to disk");
             apps
         };
