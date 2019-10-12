@@ -26,7 +26,11 @@ fn scan_desktop_entries(paths: &Vec<String>) -> Result<Vec<App>, Error> {
         .into_iter()
         .map(|path| parse_desktop_file(&path))
         .partition(Result::is_ok);
-    let mut apps: Vec<_> = apps.into_iter().map(Result::unwrap).collect();
+    let mut apps: Vec<_> = apps
+        .into_iter()
+        .map(Result::unwrap)
+        .filter_map(|x| x)
+        .collect();
     apps.dedup();
     // TODO Don't ignore errors
     let _errs: Vec<_> = errs.into_iter().map(Result::unwrap_err).collect();
