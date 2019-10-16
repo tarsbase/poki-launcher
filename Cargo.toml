@@ -2,7 +2,6 @@
 
 members = [
 	"launcher",
-	"launcher-gtk",
 	"poki-launcher",
 	"poki-launcher-notifier",
 	"poki-launcher-x11",
