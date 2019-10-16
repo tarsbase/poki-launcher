@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-	"launcher",
+	"lib-poki-launcher",
 	"poki-launcher",
 	"poki-launcher-notifier",
 	"poki-launcher-x11",
