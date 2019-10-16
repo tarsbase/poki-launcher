@@ -35,6 +35,12 @@ fn remove_if_true(item: Option<&String>, app: App) -> Option<App> {
     }
 }
 
+fn strip_entry_args<'a>(exec: &'a str) -> String {
+    let iter = exec.split(" ");
+    let args = iter.filter(|item| !item.starts_with("%")).collect();
+    args
+}
+
 pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<App>, Error> {
     // TODO Finish implementation
     let file = Ini::load_from_file(path)?;
@@ -49,6 +55,7 @@ pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<App>, Error> 
         .get("Exec")
         .ok_or(DesktopEntryParseError::MissingExec)?
         .clone();
+    let exec = strip_entry_args(&exec);
     let icon = entry
         .get("Icon")
         .ok_or(DesktopEntryParseError::MissingIcon)?

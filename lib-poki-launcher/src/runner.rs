@@ -7,7 +7,7 @@ use super::App;
 fn parse_exec<'a>(exec: &'a str) -> (&'a str, Vec<&'a str>) {
     let mut iter = exec.split(" ");
     let cmd = iter.next().expect("Empty Exec");
-    let args = iter.filter(|item| !item.starts_with("%")).collect();
+    let args = iter.collect();
     (cmd, args)
 }
 

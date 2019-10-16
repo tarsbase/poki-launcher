@@ -12,7 +12,7 @@ use lazy_static::lazy_static;
 use rmp_serde as rmp;
 use serde::{Deserialize, Serialize};
 use serde_derive::{Deserialize, Serialize};
-use std::cmp::{Eq, PartialEq};
+use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use std::fmt;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -68,6 +68,21 @@ impl PartialEq for App {
 }
 
 impl Eq for App {}
+
+impl Ord for App {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.name
+            .cmp(&other.name)
+            .then(self.exec.cmp(&other.exec))
+            .then(self.icon.cmp(&other.icon))
+    }
+}
+
+impl PartialOrd for App {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
 impl AppsDB {
     pub fn load(path: impl AsRef<Path>) -> Result<AppsDB, Error> {
