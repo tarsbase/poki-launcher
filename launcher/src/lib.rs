@@ -24,11 +24,12 @@ pub mod prelude {
     pub use crate::db::AppsDB;
     pub use crate::scan::*;
     pub use crate::App;
+    pub use crate::DIRS;
 }
 
 lazy_static! {
     pub static ref DIRS: ProjectDirs =
-        ProjectDirs::from("info", "Ben Goldberg", "Poki Launcher").unwrap();
+        ProjectDirs::from("info", "Ben Goldberg", "Poki-Launcher").unwrap();
     pub static ref HOME_PATH: PathBuf = BaseDirs::new().unwrap().home_dir().to_owned();
 }
 

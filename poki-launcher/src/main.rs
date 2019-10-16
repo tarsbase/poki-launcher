@@ -23,10 +23,9 @@ fn main() {
     let opt = Opt::from_args();
     if opt.dump_db {
         use std::fs::File;
-        use std::path::Path;
 
-        if Path::new(&DB_PATH).exists() {
-            let mut file = File::open(&DB_PATH).expect("Failed to open db file");
+        if DB_PATH.exists() {
+            let mut file = File::open(&*DB_PATH).expect("Failed to open db file");
             let data: AppsDB = rmp_serde::from_read(&mut file).expect("Failed to parse db");
             println!("{}", serde_json::to_string_pretty(&data).unwrap());
         } else {

@@ -1,15 +1,31 @@
 use super::interface::*;
 use gtk::{Application, IconLookupFlags, IconTheme, IconThemeExt};
+use lazy_static::lazy_static;
 use lib_poki_launcher::prelude::*;
 use poki_launcher_notifier::{self as notifier, Notifier};
 use std::error::Error;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 
-pub const DB_PATH: &'static str = "apps.db";
 const MAX_APPS_SHOWN: usize = 5;
+
+lazy_static! {
+    pub static ref DB_PATH: PathBuf = {
+        use std::fs::create_dir;
+        let data_dir = DIRS.data_dir();
+        if !data_dir.exists() {
+            create_dir(&data_dir).expect(&format!(
+                "Failed to create data dir: {}",
+                data_dir.to_string_lossy()
+            ));
+        }
+        let mut db_file = data_dir.to_path_buf();
+        db_file.push("apps.db");
+        db_file
+    };
+}
 
 pub struct AppsModel {
     emit: AppsModelEmitter,
@@ -48,13 +64,12 @@ impl AppsModelTrait for AppsModel {
             Application::new(Some("info.bengoldberg.poki_launcher"), Default::default())
                 .expect("failed to initialize GTK application");
         let config = Config::load().unwrap();
-        let db_path = Path::new(&DB_PATH);
-        let apps = if db_path.exists() {
-            AppsDB::load(&DB_PATH).expect("Failed to load app db")
+        let apps = if DB_PATH.exists() {
+            AppsDB::load(&*DB_PATH).expect("Failed to load app db")
         } else {
             let apps = AppsDB::from_desktop_entries(&config.app_paths)
                 .expect("Scan for desktop entries failed");
-            apps.save(&DB_PATH).expect("Failed to write db to disk");
+            apps.save(&*DB_PATH).expect("Failed to write db to disk");
             apps
         };
 
@@ -124,7 +139,7 @@ impl AppsModelTrait for AppsModel {
         // TODO Log errors
         println!("Scanning...");
         let _ = self.apps.rescan_desktop_entries(&self.config.app_paths);
-        let _ = self.apps.save(&DB_PATH);
+        let _ = self.apps.save(&*DB_PATH);
         println!("Scanning...done");
     }
 
@@ -192,7 +207,7 @@ impl AppsModelTrait for AppsModel {
             eprintln!("Failed to execute app:\n{:#?}", err);
         }
         self.apps.update(app);
-        self.apps.save(&DB_PATH).unwrap();
+        self.apps.save(&*DB_PATH).unwrap();
         self.list.clear();
         self.model.end_reset_model();
     }

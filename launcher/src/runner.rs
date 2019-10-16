@@ -15,7 +15,7 @@ impl App {
     #[allow(dead_code)]
     pub fn run(&self) -> Result<(), Error> {
         let (cmd, args) = parse_exec(&self.exec);
-        let child = Command::new(&cmd)
+        let _child = Command::new(&cmd)
             .args(&args)
             .stdout(Stdio::null())
             .spawn()?;
