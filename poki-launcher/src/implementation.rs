@@ -12,7 +12,7 @@ use std::thread;
 
 const MAX_APPS_SHOWN: usize = 5;
 
-fn log_errs(errs: &Vec<Error>) {
+fn log_errs(errs: &[Error]) {
     for err in errs {
         error!("{}", err);
     }
@@ -23,10 +23,9 @@ lazy_static! {
         use std::fs::create_dir;
         let data_dir = DIRS.data_dir();
         if !data_dir.exists() {
-            create_dir(&data_dir).expect(&format!(
-                "Failed to create data dir: {}",
-                data_dir.to_string_lossy()
-            ));
+            create_dir(&data_dir).unwrap_or_else(|_| {
+                panic!("Failed to create data dir: {}", data_dir.to_string_lossy())
+            });
         }
         let mut db_file = data_dir.to_path_buf();
         db_file.push("apps.db");
@@ -154,7 +153,7 @@ impl AppsModelTrait for AppsModel {
     fn search(&mut self, text: String) {
         self.model.begin_reset_model();
         self.list = self.apps.get_ranked_list(&text, Some(MAX_APPS_SHOWN));
-        if self.list.len() > 0 {
+        if !self.list.is_empty() {
             self.selected_item = self.list[0].uuid.clone();
         } else {
             self.selected_item = String::new();
@@ -163,7 +162,7 @@ impl AppsModelTrait for AppsModel {
     }
 
     fn down(&mut self) {
-        if self.list.len() <= 0 {
+        if self.list.is_empty() {
             return;
         }
         self.model.begin_reset_model();
@@ -182,7 +181,7 @@ impl AppsModelTrait for AppsModel {
     }
 
     fn up(&mut self) {
-        if self.list.len() <= 0 {
+        if self.list.is_empty() {
             return;
         }
         self.model.begin_reset_model();
@@ -201,7 +200,7 @@ impl AppsModelTrait for AppsModel {
     }
 
     fn run(&mut self) {
-        if self.list.len() <= 0 {
+        if self.list.is_empty() {
             return;
         }
         self.model.begin_reset_model();
@@ -232,13 +231,11 @@ impl AppsModelTrait for AppsModel {
                     return String::new();
                 }
             };
-            let path = icon
-                .get_filename()
+            icon.get_filename()
                 .unwrap()
                 .clone()
                 .to_string_lossy()
-                .into_owned();
-            path
+                .into_owned()
         }
     }
 

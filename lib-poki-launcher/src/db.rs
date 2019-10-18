@@ -35,7 +35,7 @@ impl AppsDB {
         (current_time_secs() - self.reference_time) as f32
     }
 
-    pub fn update_score(&mut self, uuid: &String, weight: f32) {
+    pub fn update_score(&mut self, uuid: &str, weight: f32) {
         let elapsed = self.secs_elapsed();
         self.apps
             .iter_mut()
@@ -81,7 +81,7 @@ impl App {
 #[allow(dead_code)]
 pub fn current_time_secs() -> f64 {
     match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-        Ok(n) => (n.as_secs() as u128 * 1000 + n.subsec_millis() as u128) as f64 / 1000.0,
+        Ok(n) => (u128::from(n.as_secs()) * 1000 + u128::from(n.subsec_millis())) as f64 / 1000.0,
         Err(e) => {
             error!("invalid system time: {}", e);
             process::exit(1);

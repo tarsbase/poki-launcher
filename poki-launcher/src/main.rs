@@ -1,5 +1,6 @@
 mod implementation;
 pub mod interface {
+    #![allow(clippy::all)]
     include!(concat!(env!("OUT_DIR"), "/src/interface.rs"));
 }
 
@@ -41,17 +42,15 @@ fn main() {
             eprintln!("Database file doesn't exit");
             std::process::exit(1);
         }
-    } else {
-        if notifier::is_running() {
-            if let Err(e) = notifier::notify() {
-                eprintln!("{}", e);
-                start_ui();
-            }
-        } else {
-            let env = Env::new().filter("POKI_LOGGER");
-            env_logger::init_from_env(env);
+    } else if notifier::is_running() {
+        if let Err(e) = notifier::notify() {
+            eprintln!("{}", e);
             start_ui();
         }
+    } else {
+        let env = Env::new().filter("POKI_LOGGER");
+        env_logger::init_from_env(env);
+        start_ui();
     }
 }
 

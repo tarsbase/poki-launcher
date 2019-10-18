@@ -16,7 +16,7 @@ pub enum ScanError {
     ParseEntry { err: DesktopEntryParseError },
 }
 
-pub fn desktop_entires(paths: &Vec<String>) -> (Vec<PathBuf>, Vec<Error>) {
+pub fn desktop_entires(paths: &[String]) -> (Vec<PathBuf>, Vec<Error>) {
     let mut files = Vec::new();
     let mut errors = Vec::new();
     for loc in paths {
@@ -56,7 +56,7 @@ pub fn desktop_entires(paths: &Vec<String>) -> (Vec<PathBuf>, Vec<Error>) {
     (files, errors)
 }
 
-fn scan_desktop_entries(paths: &Vec<String>) -> (Vec<App>, Vec<Error>) {
+fn scan_desktop_entries(paths: &[String]) -> (Vec<App>, Vec<Error>) {
     let (entries, mut errors) = desktop_entires(&paths);
     let (apps, errs): (Vec<_>, Vec<_>) = entries
         .into_iter()
@@ -75,12 +75,12 @@ fn scan_desktop_entries(paths: &Vec<String>) -> (Vec<App>, Vec<Error>) {
 }
 
 impl AppsDB {
-    pub fn from_desktop_entries(paths: &Vec<String>) -> (AppsDB, Vec<Error>) {
+    pub fn from_desktop_entries(paths: &[String]) -> (AppsDB, Vec<Error>) {
         let (apps, errors) = scan_desktop_entries(paths);
         (AppsDB::new(apps), errors)
     }
 
-    pub fn rescan_desktop_entries(&mut self, paths: &Vec<String>) -> Vec<Error> {
+    pub fn rescan_desktop_entries(&mut self, paths: &[String]) -> Vec<Error> {
         let (apps, errors) = scan_desktop_entries(paths);
         self.merge(apps);
         errors

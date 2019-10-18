@@ -37,10 +37,9 @@ fn remove_if_true(item: Option<&String>, app: App) -> Option<App> {
     }
 }
 
-fn strip_entry_args<'a>(exec: &'a str) -> String {
-    let iter = exec.split(" ");
-    let args = iter.filter(|item| !item.starts_with("%")).collect();
-    args
+fn strip_entry_args(exec: &str) -> String {
+    let iter = exec.split(' ');
+    iter.filter(|item| !item.starts_with('%')).collect()
 }
 
 pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<App>, Error> {
@@ -76,5 +75,5 @@ pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<App>, Error> 
         .clone();
     let app = App::new(name, icon, exec);
     Ok(remove_if_true(entry.get("NoDisplay"), app.clone())
-        .or(remove_if_true(entry.get("Hidden"), app)))
+        .or_else(|| remove_if_true(entry.get("Hidden"), app)))
 }

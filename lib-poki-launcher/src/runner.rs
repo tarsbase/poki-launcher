@@ -14,7 +14,7 @@ pub struct RunError {
 }
 
 fn parse_exec<'a>(exec: &'a str) -> (&'a str, Vec<&'a str>) {
-    let mut iter = exec.split(" ");
+    let mut iter = exec.split(' ');
     let cmd = iter.next().expect("Empty Exec");
     let args = iter.collect();
     (cmd, args)

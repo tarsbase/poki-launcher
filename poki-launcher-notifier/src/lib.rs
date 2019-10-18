@@ -5,7 +5,7 @@ use std::path::Path;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 
-const LOCK_FILE_PATH: &'static str = "/tmp/poki-launcher.pid";
+const LOCK_FILE_PATH: &str = "/tmp/poki-launcher.pid";
 
 pub enum Msg {
     Show,

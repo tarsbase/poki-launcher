@@ -44,7 +44,7 @@ fn get_children(pid: u64) -> Vec<u64> {
         .stdout;
     let output = String::from_utf8(output).expect("pgrep output not utf-8");
     output
-        .split("\n")
+        .lines()
         .map(str::parse)
         .filter(Result::is_ok)
         .map(Result::unwrap)
