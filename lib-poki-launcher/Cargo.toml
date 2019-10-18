@@ -18,3 +18,4 @@ directories = "2.0"
 lazy_static = "1.4"
 poki-launcher-x11 = { path = "../poki-launcher-x11"}
 nix = "0.15"
+shellexpand = "1.0"

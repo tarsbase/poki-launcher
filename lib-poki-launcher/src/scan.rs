@@ -20,7 +20,20 @@ pub fn desktop_entires(paths: &[String]) -> (Vec<PathBuf>, Vec<Error>) {
     let mut files = Vec::new();
     let mut errors = Vec::new();
     for loc in paths {
-        match read_dir(&loc) {
+        let expanded = match shellexpand::full(&loc) {
+            Ok(path) => path,
+            Err(e) => {
+                errors.push(
+                    ScanError::PathExpand {
+                        path: loc.clone(),
+                        err: e.into(),
+                    }
+                    .into(),
+                );
+                continue;
+            }
+        };
+        match read_dir(&*expanded) {
             Ok(entries) => {
                 for entry in entries {
                     match entry {
