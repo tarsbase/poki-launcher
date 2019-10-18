@@ -6,5 +6,7 @@
         // ~/.local/share/applications/
         # Snap apps
         // "/var/lib/snapd/desktop/applications"
+        # Flatpak apps
+        // /var/lib/flatpak/exports/share/applications
     ]
 }
