@@ -69,7 +69,6 @@ fn scan_desktop_entries(paths: &[String]) -> (Vec<App>, Vec<Error>) {
         .collect();
     apps.sort_unstable();
     apps.dedup();
-    // TODO Don't ignore errors
     errors.extend(errs.into_iter().map(Result::unwrap_err).collect::<Vec<_>>());
     (apps, errors)
 }

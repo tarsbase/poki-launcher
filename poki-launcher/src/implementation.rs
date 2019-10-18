@@ -3,7 +3,7 @@ use failure::Error;
 use gtk::{Application, IconLookupFlags, IconTheme, IconThemeExt};
 use lazy_static::lazy_static;
 use lib_poki_launcher::prelude::*;
-use log::{error, warn};
+use log::{error, trace, warn};
 use poki_launcher_notifier::{self as notifier, Notifier};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -142,12 +142,11 @@ impl AppsModelTrait for AppsModel {
     }
 
     fn scan(&mut self) {
-        // TODO Log errors
-        println!("Scanning...");
+        trace!("Scanning...");
         let errors = self.apps.rescan_desktop_entries(&self.config.app_paths);
         log_errs(&errors);
         let _ = self.apps.save(&*DB_PATH);
-        println!("Scanning...done");
+        trace!("Scanning...done");
     }
 
     fn search(&mut self, text: String) {
@@ -209,7 +208,6 @@ impl AppsModelTrait for AppsModel {
             .iter()
             .find(|app| app.uuid == self.selected_item)
             .unwrap();
-        // TODO Handle app run failures
         if let Err(err) = app.run() {
             error!("{}", err);
         }
