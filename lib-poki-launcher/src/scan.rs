@@ -1,5 +1,5 @@
 use crate::db::AppsDB;
-use crate::desktop_entry::{parse_desktop_file, DesktopEntryParseError};
+use crate::desktop_entry::{parse_desktop_file, EntryParseError};
 use crate::App;
 use failure::{Error, Fail};
 use std::fs::read_dir;
@@ -13,7 +13,9 @@ pub enum ScanError {
     )]
     ScanDirectory { dir: String, err: Error },
     #[fail(display = "Parse error: {}", err)]
-    ParseEntry { err: DesktopEntryParseError },
+    ParseEntry { err: EntryParseError },
+    #[fail(display = "Failed to expand path {}: {}", path, err)]
+    PathExpand { path: String, err: Error },
 }
 
 pub fn desktop_entires(paths: &[String]) -> (Vec<PathBuf>, Vec<Error>) {
