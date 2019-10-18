@@ -1,15 +1,22 @@
 use super::interface::*;
+use failure::Error;
 use gtk::{Application, IconLookupFlags, IconTheme, IconThemeExt};
 use lazy_static::lazy_static;
 use lib_poki_launcher::prelude::*;
+use log::error;
 use poki_launcher_notifier::{self as notifier, Notifier};
-use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 
 const MAX_APPS_SHOWN: usize = 5;
+
+fn log_errs(errs: &Vec<Error>) {
+    for err in errs {
+        error!("{}", err);
+    }
+}
 
 lazy_static! {
     pub static ref DB_PATH: PathBuf = {
@@ -40,7 +47,7 @@ pub struct AppsModel {
 fn setup_notifier(
     mut emit: AppsModelEmitter,
     window_visible: Arc<AtomicBool>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let rx = Notifier::start()?;
     thread::spawn(move || loop {
         use notifier::Msg;
@@ -67,8 +74,8 @@ impl AppsModelTrait for AppsModel {
         let apps = if DB_PATH.exists() {
             AppsDB::load(&*DB_PATH).expect("Failed to load app db")
         } else {
-            let apps = AppsDB::from_desktop_entries(&config.app_paths)
-                .expect("Scan for desktop entries failed");
+            let (apps, errors) = AppsDB::from_desktop_entries(&config.app_paths);
+            log_errs(&errors);
             apps.save(&*DB_PATH).expect("Failed to write db to disk");
             apps
         };
@@ -138,7 +145,8 @@ impl AppsModelTrait for AppsModel {
     fn scan(&mut self) {
         // TODO Log errors
         println!("Scanning...");
-        let _ = self.apps.rescan_desktop_entries(&self.config.app_paths);
+        let errors = self.apps.rescan_desktop_entries(&self.config.app_paths);
+        log_errs(&errors);
         let _ = self.apps.save(&*DB_PATH);
         println!("Scanning...done");
     }

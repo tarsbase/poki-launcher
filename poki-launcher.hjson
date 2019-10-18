@@ -1,6 +1,10 @@
 {
     app_paths: [
+        # System apps
         "/usr/share/applications/"
+        # User apps
         // ~/.local/share/applications/
+        # Snap apps
+        // "/var/lib/snapd/desktop/applications"
     ]
 }

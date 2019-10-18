@@ -3,6 +3,7 @@ pub mod interface {
     include!(concat!(env!("OUT_DIR"), "/src/interface.rs"));
 }
 
+use env_logger::Env;
 use implementation::DB_PATH;
 use lib_poki_launcher::prelude::AppsDB;
 use poki_launcher_notifier as notifier;
@@ -20,6 +21,9 @@ struct Opt {
 }
 
 fn main() {
+    let env = Env::new().filter("POKI_LOGGER");
+    env_logger::init_from_env(env);
+
     let opt = Opt::from_args();
     if opt.dump_db {
         use std::fs::File;

@@ -1,27 +1,63 @@
-use failure::Error;
-
 use crate::db::AppsDB;
-use crate::desktop_entry::parse_desktop_file;
+use crate::desktop_entry::{parse_desktop_file, DesktopEntryParseError};
 use crate::App;
+use failure::{Error, Fail};
 use std::fs::read_dir;
 use std::path::PathBuf;
 
-pub fn desktop_entires(paths: &Vec<String>) -> Result<Vec<PathBuf>, Error> {
+#[derive(Debug, Fail)]
+pub enum ScanError {
+    #[fail(
+        display = "Failed to scan directory {} for desktop entries: {:?}",
+        dir, err
+    )]
+    ScanDirectory { dir: String, err: Error },
+    #[fail(display = "Parse error: {}", err)]
+    ParseEntry { err: DesktopEntryParseError },
+}
+
+pub fn desktop_entires(paths: &Vec<String>) -> (Vec<PathBuf>, Vec<Error>) {
     let mut files = Vec::new();
+    let mut errors = Vec::new();
     for loc in paths {
-        // TODO Print a nice error
-        for entry in read_dir(&loc)? {
-            let entry = entry?;
-            if entry.file_name().to_str().unwrap().contains(".desktop") {
-                files.push(entry.path())
+        match read_dir(&loc) {
+            Ok(entries) => {
+                for entry in entries {
+                    match entry {
+                        Ok(entry) => {
+                            if entry.file_name().to_str().unwrap().contains(".desktop") {
+                                files.push(entry.path())
+                            }
+                        }
+                        Err(e) => {
+                            errors.push(
+                                ScanError::ScanDirectory {
+                                    dir: loc.clone(),
+                                    err: e.into(),
+                                }
+                                .into(),
+                            );
+                            continue;
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                errors.push(
+                    ScanError::ScanDirectory {
+                        dir: loc.clone(),
+                        err: e.into(),
+                    }
+                    .into(),
+                );
             }
         }
     }
-    Ok(files)
+    (files, errors)
 }
 
-fn scan_desktop_entries(paths: &Vec<String>) -> Result<Vec<App>, Error> {
-    let entries = desktop_entires(&paths)?;
+fn scan_desktop_entries(paths: &Vec<String>) -> (Vec<App>, Vec<Error>) {
+    let (entries, mut errors) = desktop_entires(&paths);
     let (apps, errs): (Vec<_>, Vec<_>) = entries
         .into_iter()
         .map(|path| parse_desktop_file(&path))
@@ -34,17 +70,19 @@ fn scan_desktop_entries(paths: &Vec<String>) -> Result<Vec<App>, Error> {
     apps.sort_unstable();
     apps.dedup();
     // TODO Don't ignore errors
-    let _errs: Vec<_> = errs.into_iter().map(Result::unwrap_err).collect();
-    Ok(apps)
+    errors.extend(errs.into_iter().map(Result::unwrap_err).collect::<Vec<_>>());
+    (apps, errors)
 }
 
 impl AppsDB {
-    pub fn from_desktop_entries(paths: &Vec<String>) -> Result<AppsDB, Error> {
-        Ok(AppsDB::new(scan_desktop_entries(paths)?))
+    pub fn from_desktop_entries(paths: &Vec<String>) -> (AppsDB, Vec<Error>) {
+        let (apps, errors) = scan_desktop_entries(paths);
+        (AppsDB::new(apps), errors)
     }
 
-    pub fn rescan_desktop_entries(&mut self, paths: &Vec<String>) -> Result<(), Error> {
-        self.merge(scan_desktop_entries(paths)?);
-        Ok(())
+    pub fn rescan_desktop_entries(&mut self, paths: &Vec<String>) -> Vec<Error> {
+        let (apps, errors) = scan_desktop_entries(paths);
+        self.merge(apps);
+        errors
     }
 }

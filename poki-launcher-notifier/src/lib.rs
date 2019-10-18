@@ -1,4 +1,4 @@
-use std::error::Error;
+use failure::{Error, Fail};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -19,7 +19,7 @@ pub fn is_running() -> bool {
 pub struct Notifier(Receiver<Msg>);
 
 impl Notifier {
-    pub fn start() -> Result<Notifier, Box<dyn Error>> {
+    pub fn start() -> Result<Notifier, Error> {
         use nix::unistd::getpid;
         use signal_hook::iterator::Signals;
         use signal_hook::*;
@@ -57,7 +57,7 @@ impl Drop for Notifier {
     }
 }
 
-pub fn notify() -> Result<(), Box<dyn Error>> {
+pub fn notify() -> Result<(), Error> {
     use nix::sys::signal::{kill, Signal};
     use nix::unistd::Pid;
 
