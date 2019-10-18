@@ -3,7 +3,7 @@ use failure::Error;
 use gtk::{Application, IconLookupFlags, IconTheme, IconThemeExt};
 use lazy_static::lazy_static;
 use lib_poki_launcher::prelude::*;
-use log::error;
+use log::{error, warn};
 use poki_launcher_notifier::{self as notifier, Notifier};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -72,11 +72,11 @@ impl AppsModelTrait for AppsModel {
                 .expect("failed to initialize GTK application");
         let config = Config::load().unwrap();
         let apps = if DB_PATH.exists() {
-            AppsDB::load(&*DB_PATH).expect("Failed to load app db")
+            AppsDB::load(&*DB_PATH).unwrap()
         } else {
             let (apps, errors) = AppsDB::from_desktop_entries(&config.app_paths);
             log_errs(&errors);
-            apps.save(&*DB_PATH).expect("Failed to write db to disk");
+            apps.save(&*DB_PATH).unwrap();
             apps
         };
 
@@ -212,7 +212,7 @@ impl AppsModelTrait for AppsModel {
             .unwrap();
         // TODO Handle app run failures
         if let Err(err) = app.run() {
-            eprintln!("Failed to execute app:\n{:#?}", err);
+            error!("{}", err);
         }
         self.apps.update(app);
         self.apps.save(&*DB_PATH).unwrap();
@@ -228,11 +228,16 @@ impl AppsModelTrait for AppsModel {
             let icon = match theme.lookup_icon(&name, 128, IconLookupFlags::empty()) {
                 Some(icon) => icon,
                 None => {
-                    eprintln!("No icon found for {}", name);
+                    warn!("No icon found for {}", name);
                     return String::new();
                 }
             };
-            let path = (*icon.get_filename().unwrap().clone().to_string_lossy()).to_owned();
+            let path = icon
+                .get_filename()
+                .unwrap()
+                .clone()
+                .to_string_lossy()
+                .into_owned();
             path
         }
     }
@@ -246,6 +251,8 @@ impl AppsModelTrait for AppsModel {
         use nix::sys::signal::{kill, Signal};
         use nix::unistd::Pid;
 
-        let _ = kill(Pid::this(), Signal::SIGINT);
+        if let Err(e) = kill(Pid::this(), Signal::SIGINT) {
+            error!("Failed to signal self to exit: {}", e);
+        }
     }
 }

@@ -18,6 +18,7 @@ lazy_static = "1.4"
 log = "0.4"
 env_logger = "0.7"
 failure = "0.1"
+human-panic = "1.0"
 
 [build-dependencies]
 rust_qt_binding_generator = "0.3"

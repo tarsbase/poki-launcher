@@ -4,6 +4,7 @@ pub mod interface {
 }
 
 use env_logger::Env;
+use human_panic::setup_panic;
 use implementation::DB_PATH;
 use lib_poki_launcher::prelude::AppsDB;
 use poki_launcher_notifier as notifier;
@@ -21,8 +22,12 @@ struct Opt {
 }
 
 fn main() {
-    let env = Env::new().filter("POKI_LOGGER");
-    env_logger::init_from_env(env);
+    setup_panic!(Metadata {
+        name: env!("CARGO_PKG_NAME").into(),
+        version: env!("CARGO_PKG_VERSION").into(),
+        authors: "Ben Goldberg <benaagoldberg@gmail.com>".into(),
+        homepage: "https://github.com/zethra/poki-launcher".into(),
+    });
 
     let opt = Opt::from_args();
     if opt.dump_db {
@@ -43,6 +48,8 @@ fn main() {
                 start_ui();
             }
         } else {
+            let env = Env::new().filter("POKI_LOGGER");
+            env_logger::init_from_env(env);
             start_ui();
         }
     }

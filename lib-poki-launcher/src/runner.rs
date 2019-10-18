@@ -1,10 +1,17 @@
-use failure::Error;
+use failure::{Error, Fail};
 use nix::unistd::{getpid, setpgid};
 use poki_launcher_x11::forground;
 use std::os::unix::process::CommandExt as _;
 use std::process::{Command, Stdio};
 
 use super::App;
+
+#[derive(Debug, Fail)]
+#[fail(display = "Execution failed with Exec line {}: {}", exec, err)]
+pub struct RunError {
+    exec: String,
+    err: Error,
+}
 
 fn parse_exec<'a>(exec: &'a str) -> (&'a str, Vec<&'a str>) {
     let mut iter = exec.split(" ");
@@ -29,7 +36,10 @@ impl App {
                 Ok(())
             });
         }
-        let _child = command.spawn()?;
+        let _child = command.spawn().map_err(|e| RunError {
+            exec: self.exec.clone(),
+            err: e.into(),
+        })?;
         forground(cmd);
         Ok(())
     }

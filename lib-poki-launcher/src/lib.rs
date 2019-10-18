@@ -6,16 +6,15 @@ pub mod scan;
 
 use db::AppsDB;
 use directories::{BaseDirs, ProjectDirs};
-use failure::Error;
+use failure::{Error, Fail};
 use fuzzy_matcher::skim::fuzzy_match;
 use lazy_static::lazy_static;
 use rmp_serde as rmp;
-use serde::{Deserialize, Serialize};
 use serde_derive::{Deserialize, Serialize};
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use std::fmt;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use uuid::prelude::*;
 
@@ -86,18 +85,30 @@ impl PartialOrd for App {
 
 impl AppsDB {
     pub fn load(path: impl AsRef<Path>) -> Result<AppsDB, Error> {
-        let mut apps_file = File::open(&path)?;
-        let mut buf = Vec::new();
-        apps_file.read_to_end(&mut buf)?;
-        let mut de = rmp::Deserializer::new(&buf[..]);
-        Ok(Deserialize::deserialize(&mut de)?)
+        let path_str = path.as_ref().to_string_lossy().into_owned();
+        Ok(
+            rmp::from_read(File::open(&path).map_err(|e| AppDBError::FileOpen {
+                file: path_str.clone(),
+                err: e.into(),
+            })?)
+            .map_err(|e| AppDBError::ParseDB {
+                file: path_str.clone(),
+                err: e.into(),
+            })?,
+        )
     }
 
     pub fn save(&self, path: impl AsRef<Path>) -> Result<(), Error> {
-        let mut buf = Vec::new();
-        self.serialize(&mut rmp::Serializer::new(&mut buf))?;
-        let mut file = File::create(&path)?;
-        file.write_all(&buf)?;
+        let path_str = path.as_ref().to_string_lossy().into_owned();
+        let buf = rmp::to_vec(&self).expect("Failed to encode apps db");
+        let mut file = File::create(&path).map_err(|e| AppDBError::FileCreate {
+            file: path_str.clone(),
+            err: e.into(),
+        })?;
+        file.write_all(&buf).map_err(|e| AppDBError::FileWrite {
+            file: path_str.clone(),
+            err: e.into(),
+        })?;
         Ok(())
     }
 
@@ -130,4 +141,16 @@ impl fmt::Display for App {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.name)
     }
+}
+
+#[derive(Debug, Fail)]
+pub enum AppDBError {
+    #[fail(display = "Failed to open apps database file {}: {}", file, err)]
+    FileOpen { file: String, err: Error },
+    #[fail(display = "Failed to create apps database file {}: {}", file, err)]
+    FileCreate { file: String, err: Error },
+    #[fail(display = "Failed to write to apps database file {}: {}", file, err)]
+    FileWrite { file: String, err: Error },
+    #[fail(display = "Couldn't parse apps database file {}: {}", file, err)]
+    ParseDB { file: String, err: Error },
 }

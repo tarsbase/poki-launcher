@@ -8,7 +8,7 @@ use std::path::PathBuf;
 #[derive(Debug, Fail)]
 pub enum ScanError {
     #[fail(
-        display = "Failed to scan directory {} for desktop entries: {:?}",
+        display = "Failed to scan directory {} for desktop entries: {}",
         dir, err
     )]
     ScanDirectory { dir: String, err: Error },

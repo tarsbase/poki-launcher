@@ -1,4 +1,4 @@
-use failure::{Error, Fail};
+use failure::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
