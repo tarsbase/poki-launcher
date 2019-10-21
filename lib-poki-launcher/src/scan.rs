@@ -131,7 +131,7 @@ impl AppsDB {
     /// * `paths` - A list of paths to desktop entries.
     pub fn rescan_desktop_entries(&mut self, paths: &[String]) -> Vec<Error> {
         let (apps, errors) = scan_desktop_entries(paths);
-        self.merge(apps);
+        self.merge_new_entries(apps);
         errors
     }
 }

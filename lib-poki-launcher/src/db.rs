@@ -147,7 +147,11 @@ impl AppsDB {
             .update_frecency(weight, elapsed, self.half_life);
     }
 
-    pub fn merge(&mut self, mut apps_to_merge: Vec<App>) {
+    /// Merge the apps from a re-scan into the database.
+    ///
+    /// * Apps in `self` that are not in `apps_to_merge` will be removed from `self`
+    /// * Apps in `apps_to_merge` not in `self` will be added to `self`
+    pub fn merge_new_entries(&mut self, mut apps_to_merge: Vec<App>) {
         let apps = std::mem::replace(&mut self.apps, Vec::new());
         self.apps = apps
             .into_iter()
