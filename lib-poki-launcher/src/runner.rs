@@ -22,10 +22,13 @@ use std::process::{Command, Stdio};
 
 use super::App;
 
+/// An error from running the app.
 #[derive(Debug, Fail)]
 #[fail(display = "Execution failed with Exec line {}: {}", exec, err)]
 pub struct RunError {
+    /// The exec string from the app
     exec: String,
+    /// The error to propagate.
     err: Error,
 }
 
@@ -37,6 +40,7 @@ fn parse_exec<'a>(exec: &'a str) -> (&'a str, Vec<&'a str>) {
 }
 
 impl App {
+    /// Run the app.
     pub fn run(&self) -> Result<(), Error> {
         let (cmd, args) = parse_exec(&self.exec);
         let mut command = Command::new(&cmd);

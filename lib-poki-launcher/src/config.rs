@@ -20,8 +20,10 @@ use serde_derive::Deserialize;
 use std::default::Default;
 use std::fs::create_dir;
 
+/// User settings.
 #[derive(Deserialize)]
 pub struct Config {
+    /// The list of directories to search for desktop entries in.
     pub app_paths: Vec<String>,
 }
 
@@ -34,6 +36,7 @@ impl Default for Config {
 }
 
 impl Config {
+    /// Load the app config.
     pub fn load() -> Result<Config, Error> {
         let mut cfg = config::Config::default();
         let config_dir = DIRS.config_dir();

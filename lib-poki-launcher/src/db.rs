@@ -18,27 +18,107 @@ use log::*;
 use std::cmp::Ordering;
 
 use super::App;
+use failure::{Error, Fail};
+use fuzzy_matcher::skim::fuzzy_match;
+use rmp_serde as rmp;
 use serde_derive::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::Write as _;
+use std::path::Path;
 use std::process;
 use std::time::SystemTime;
 
+/// An apps database.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AppsDB {
+    /// The list of apps.
     pub apps: Vec<App>,
+    /// The reference time used in the ranking calculations.
     reference_time: f64,
+    /// The half life of the app launches
     half_life: f32,
 }
 
 #[allow(dead_code)]
 impl AppsDB {
+    /// Create a new app.
     pub fn new(apps: Vec<App>) -> Self {
         AppsDB {
             apps,
             reference_time: current_time_secs(),
+            // Half life of 3 days
             half_life: 60.0 * 60.0 * 24.0 * 3.0,
         }
     }
 
+    /// Load database file.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Location of the database file
+    pub fn load(path: impl AsRef<Path>) -> Result<AppsDB, Error> {
+        let path_str = path.as_ref().to_string_lossy().into_owned();
+        Ok(
+            rmp::from_read(File::open(&path).map_err(|e| AppDBError::FileOpen {
+                file: path_str.clone(),
+                err: e.into(),
+            })?)
+            .map_err(|e| AppDBError::ParseDB {
+                file: path_str.clone(),
+                err: e.into(),
+            })?,
+        )
+    }
+
+    /// Save database file.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Location of the database file
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<(), Error> {
+        let path_str = path.as_ref().to_string_lossy().into_owned();
+        let buf = rmp::to_vec(&self).expect("Failed to encode apps db");
+        let mut file = File::create(&path).map_err(|e| AppDBError::FileCreate {
+            file: path_str.clone(),
+            err: e.into(),
+        })?;
+        file.write_all(&buf).map_err(|e| AppDBError::FileWrite {
+            file: path_str.clone(),
+            err: e.into(),
+        })?;
+        Ok(())
+    }
+
+    /// Get the apps in rank order for a given search string.
+    ///
+    /// This ranks the apps both by frecency score and fuzzy search.
+    // TODO Remove num_items
+    pub fn get_ranked_list(&self, search: &str, num_items: Option<usize>) -> Vec<App> {
+        let mut app_list = self
+            .apps
+            .iter()
+            .filter_map(|app| match fuzzy_match(&app.name, &search) {
+                Some(score) if score > 0 => {
+                    let mut app = app.clone();
+                    app.score += score as f32;
+                    Some(app)
+                }
+                _ => None,
+            })
+            .collect::<Vec<App>>();
+        app_list.sort_by(|left, right| right.score.partial_cmp(&left.score).unwrap());
+        if let Some(n) = num_items {
+            app_list = app_list.into_iter().take(n).collect();
+        }
+        app_list
+    }
+
+    /// Increment to score for app `to_update` by 1 launch.
+    pub fn update(&mut self, to_update: &App) {
+        self.update_score(&to_update.uuid, 1.0);
+    }
+
+    /// Sort the apps database by score.
     pub fn sort(&mut self) {
         self.apps.sort_unstable_by(|left, right| {
             left.score
@@ -47,10 +127,17 @@ impl AppsDB {
         });
     }
 
+    /// Seconds elapsed since the reference time.
     fn secs_elapsed(&self) -> f32 {
         (current_time_secs() - self.reference_time) as f32
     }
 
+    /// Update the score of an app.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` - The uuid of the app to update.
+    /// * `weight` - The amount to update to score by.
     pub fn update_score(&mut self, uuid: &str, weight: f32) {
         let elapsed = self.secs_elapsed();
         self.apps
@@ -103,4 +190,16 @@ pub fn current_time_secs() -> f64 {
             process::exit(1);
         }
     }
+}
+
+#[derive(Debug, Fail)]
+pub enum AppDBError {
+    #[fail(display = "Failed to open apps database file {}: {}", file, err)]
+    FileOpen { file: String, err: Error },
+    #[fail(display = "Failed to create apps database file {}: {}", file, err)]
+    FileCreate { file: String, err: Error },
+    #[fail(display = "Failed to write to apps database file {}: {}", file, err)]
+    FileWrite { file: String, err: Error },
+    #[fail(display = "Couldn't parse apps database file {}: {}", file, err)]
+    ParseDB { file: String, err: Error },
 }

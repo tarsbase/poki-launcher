@@ -14,26 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
+/// Application configuration
 pub mod config;
+/// Interact with the app database
 pub mod db;
+/// Parse deskop entries
 pub mod desktop_entry;
+/// Run an app
 pub mod runner;
+/// Scan for desktop entries
 pub mod scan;
 
-use db::AppsDB;
 use directories::{BaseDirs, ProjectDirs};
-use failure::{Error, Fail};
-use fuzzy_matcher::skim::fuzzy_match;
 use lazy_static::lazy_static;
-use rmp_serde as rmp;
 use serde_derive::{Deserialize, Serialize};
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use std::fmt;
-use std::fs::File;
-use std::io::Write as _;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use uuid::prelude::*;
 
+/// Things that you'll probably need in include when using this lib
 pub mod prelude {
     pub use crate::config::Config;
     pub use crate::db::AppsDB;
@@ -48,17 +48,25 @@ lazy_static! {
     pub static ref HOME_PATH: PathBuf = BaseDirs::new().unwrap().home_dir().to_owned();
 }
 
+/// An app on your machine.
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-#[allow(dead_code)]
 pub struct App {
+    /// Display name of the app.
     pub name: String,
+    /// The exec string used to run the app.
     exec: String,
+    /// Score of the app of the ranking aglo.
     score: f32,
+    /// Uuid used to uniquly identify this app.
+    /// This is saved to find the app later when the list changes.
     pub uuid: String,
+    /// Icon name for this app.
+    /// The icon name has to be looked up in the system'c icon theme to get a file path.
     pub icon: String,
 }
 
 impl App {
+    /// Create a new app.
     pub fn new(name: String, icon: String, exec: String) -> App {
         App {
             name,
@@ -69,6 +77,7 @@ impl App {
         }
     }
 
+    /// Set this app's name, icon, and exec to the values of the other app.
     pub fn merge(&mut self, other: &App) {
         self.name = other.name.clone();
         self.icon = other.icon.clone();
@@ -99,74 +108,8 @@ impl PartialOrd for App {
     }
 }
 
-impl AppsDB {
-    pub fn load(path: impl AsRef<Path>) -> Result<AppsDB, Error> {
-        let path_str = path.as_ref().to_string_lossy().into_owned();
-        Ok(
-            rmp::from_read(File::open(&path).map_err(|e| AppDBError::FileOpen {
-                file: path_str.clone(),
-                err: e.into(),
-            })?)
-            .map_err(|e| AppDBError::ParseDB {
-                file: path_str.clone(),
-                err: e.into(),
-            })?,
-        )
-    }
-
-    pub fn save(&self, path: impl AsRef<Path>) -> Result<(), Error> {
-        let path_str = path.as_ref().to_string_lossy().into_owned();
-        let buf = rmp::to_vec(&self).expect("Failed to encode apps db");
-        let mut file = File::create(&path).map_err(|e| AppDBError::FileCreate {
-            file: path_str.clone(),
-            err: e.into(),
-        })?;
-        file.write_all(&buf).map_err(|e| AppDBError::FileWrite {
-            file: path_str.clone(),
-            err: e.into(),
-        })?;
-        Ok(())
-    }
-
-    pub fn get_ranked_list(&self, search: &str, num_items: Option<usize>) -> Vec<App> {
-        let mut app_list = self
-            .apps
-            .iter()
-            .filter_map(|app| match fuzzy_match(&app.name, &search) {
-                Some(score) if score > 0 => {
-                    let mut app = app.clone();
-                    app.score += score as f32;
-                    Some(app)
-                }
-                _ => None,
-            })
-            .collect::<Vec<App>>();
-        app_list.sort_by(|left, right| right.score.partial_cmp(&left.score).unwrap());
-        if let Some(n) = num_items {
-            app_list = app_list.into_iter().take(n).collect();
-        }
-        app_list
-    }
-
-    pub fn update(&mut self, to_update: &App) {
-        self.update_score(&to_update.uuid, 1.0);
-    }
-}
-
 impl fmt::Display for App {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.name)
     }
-}
-
-#[derive(Debug, Fail)]
-pub enum AppDBError {
-    #[fail(display = "Failed to open apps database file {}: {}", file, err)]
-    FileOpen { file: String, err: Error },
-    #[fail(display = "Failed to create apps database file {}: {}", file, err)]
-    FileCreate { file: String, err: Error },
-    #[fail(display = "Failed to write to apps database file {}: {}", file, err)]
-    FileWrite { file: String, err: Error },
-    #[fail(display = "Couldn't parse apps database file {}: {}", file, err)]
-    ParseDB { file: String, err: Error },
 }

@@ -21,19 +21,24 @@ use failure::{Error, Fail};
 use std::fs::read_dir;
 use std::path::PathBuf;
 
+/// An error from scanning for desktop entries.
 #[derive(Debug, Fail)]
 pub enum ScanError {
+    /// Failed to scan the directory for some reason (ex. it doesn't exist).
     #[fail(
         display = "Failed to scan directory {} for desktop entries: {}",
         dir, err
     )]
     ScanDirectory { dir: String, err: Error },
+    /// Paring the entry failed.
     #[fail(display = "Parse error: {}", err)]
     ParseEntry { err: EntryParseError },
+    /// Path expansion failed.
     #[fail(display = "Failed to expand path {}: {}", path, err)]
     PathExpand { path: String, err: Error },
 }
 
+/// Get a list of desktop entries from a list of directories to search.
 pub fn desktop_entires(paths: &[String]) -> (Vec<PathBuf>, Vec<Error>) {
     let mut files = Vec::new();
     let mut errors = Vec::new();
@@ -87,6 +92,7 @@ pub fn desktop_entires(paths: &[String]) -> (Vec<PathBuf>, Vec<Error>) {
     (files, errors)
 }
 
+/// Get a list of apps for a list of paths to search.
 fn scan_desktop_entries(paths: &[String]) -> (Vec<App>, Vec<Error>) {
     let (entries, mut errors) = desktop_entires(&paths);
     let (apps, errs): (Vec<_>, Vec<_>) = entries
@@ -105,11 +111,24 @@ fn scan_desktop_entries(paths: &[String]) -> (Vec<App>, Vec<Error>) {
 }
 
 impl AppsDB {
+    /// Create an `AppsDB` from the desktop entries.
+    ///
+    /// # Arguments
+    ///
+    /// * `paths` - A list of paths to desktop entries.
     pub fn from_desktop_entries(paths: &[String]) -> (AppsDB, Vec<Error>) {
         let (apps, errors) = scan_desktop_entries(paths);
         (AppsDB::new(apps), errors)
     }
 
+    /// Update self with new desktop entries.
+    ///
+    /// Scan the desktop entries again then merge the new list
+    /// into self with `AppsDB.merge`.
+    ///
+    /// # Arguments
+    ///
+    /// * `paths` - A list of paths to desktop entries.
     pub fn rescan_desktop_entries(&mut self, paths: &[String]) -> Vec<Error> {
         let (apps, errors) = scan_desktop_entries(paths);
         self.merge(apps);
