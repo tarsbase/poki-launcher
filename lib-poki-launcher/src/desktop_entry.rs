@@ -36,7 +36,7 @@ pub enum EntryParseError {
     #[fail(display = "Desktop file {} is missing the 'Icon' parameter", file)]
     MissingIcon { file: String },
     /// Failed to parse deskop file.
-    #[fail(display = "Failed to parse deskop file {}: {}", file, err)]
+    #[fail(display = "Failed to parse desktop file {}: {}", file, err)]
     InvalidIni { file: String, err: Error },
     #[fail(
         display = "In entry {} property {} has an invalid value {}",
@@ -76,7 +76,7 @@ fn strip_entry_args(exec: &str) -> String {
 ///
 /// # Example
 ///
-/// Parse a list of desktop entries, seperating successes from failures, then removing apps
+/// Parse a list of desktop entries, separating successes from failures, then removing apps
 /// that shouldn't be displayed (None) from the successes.
 /// ```no_run
 /// use lib_poki_launcher::desktop_entry::parse_desktop_file;
@@ -184,7 +184,7 @@ mod test {
                 "testicon".to_owned(),
                 "/usr/bin/test --with-flag".to_owned(),
             );
-            // Note, apps will have different uuids but Eq deosn't consider them
+            // Note, apps will have different uuids but Eq doesn't consider them
             assert_eq!(app, other_app);
             remove_file(&path).unwrap();
         }

@@ -18,7 +18,7 @@
 pub mod config;
 /// Interact with the app database
 pub mod db;
-/// Parse deskop entries
+/// Parse desktop entries
 pub mod desktop_entry;
 /// Run an app
 pub mod runner;
@@ -55,13 +55,13 @@ pub struct App {
     pub name: String,
     /// The exec string used to run the app.
     exec: String,
-    /// Score of the app of the ranking aglo.
+    /// Score of the app of the ranking algo.
     score: f32,
-    /// Uuid used to uniquly identify this app.
+    /// Uuid used to uniquely identify this app.
     /// This is saved to find the app later when the list changes.
     pub uuid: String,
     /// Icon name for this app.
-    /// The icon name has to be looked up in the system'c icon theme to get a file path.
+    /// The icon name has to be looked up in the system's icon theme to get a file path.
     pub icon: String,
 }
 
