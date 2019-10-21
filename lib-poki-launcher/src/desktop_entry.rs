@@ -17,6 +17,7 @@
 use super::App;
 use failure::{Error, Fail};
 use ini::Ini;
+use itertools::Itertools as _;
 use std::path::Path;
 
 #[allow(dead_code)]
@@ -52,7 +53,7 @@ fn prop_is_true(item: Option<&String>) -> Result<bool, Error> {
 
 fn strip_entry_args(exec: &str) -> String {
     let iter = exec.split(' ');
-    iter.filter(|item| !item.starts_with('%')).collect()
+    iter.filter(|item| !item.starts_with('%')).join(" ")
 }
 
 pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<App>, Error> {
