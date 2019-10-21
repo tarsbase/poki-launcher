@@ -2,5 +2,5 @@
 
 **Work in progress**
 
-Poki Laucher is an application launcher for Linux.  It tracks app useage then ranks apps basesd on frecency and fuzzy search.
+Poki Launcher is an application launcher for Linux.  It tracks app usage then ranks apps based on frecency and fuzzy search.
 It's written in Rust and QML.
