@@ -207,3 +207,64 @@ pub enum AppDBError {
     #[fail(display = "Couldn't parse apps database file {}: {}", file, err)]
     ParseDB { file: String, err: Error },
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn merge_new_entries_identical() {
+        let apps = vec![
+            App::new(
+                "Test1".to_owned(),
+                "icon".to_owned(),
+                "/bin/test".to_owned(),
+            ),
+            App::new(
+                "Test2".to_owned(),
+                "icon".to_owned(),
+                "/bin/test".to_owned(),
+            ),
+        ];
+        let mut apps_db = AppsDB::new(apps.clone());
+        apps_db.merge_new_entries(apps.clone());
+        assert_eq!(apps, apps_db.apps);
+    }
+
+    #[test]
+    fn merge_new_entries_remove() {
+        let mut apps = vec![
+            App::new(
+                "Test1".to_owned(),
+                "icon".to_owned(),
+                "/bin/test".to_owned(),
+            ),
+            App::new(
+                "Test2".to_owned(),
+                "icon".to_owned(),
+                "/bin/test".to_owned(),
+            ),
+        ];
+        let mut apps_db = AppsDB::new(apps.clone());
+        apps.remove(0);
+        apps_db.merge_new_entries(apps.clone());
+        assert_eq!(apps, apps_db.apps);
+    }
+
+    #[test]
+    fn merge_new_entries_add() {
+        let mut apps = vec![App::new(
+            "Test1".to_owned(),
+            "icon".to_owned(),
+            "/bin/test".to_owned(),
+        )];
+        let mut apps_db = AppsDB::new(apps.clone());
+        apps.push(App::new(
+            "Test2".to_owned(),
+            "icon".to_owned(),
+            "/bin/test".to_owned(),
+        ));
+        apps_db.merge_new_entries(apps.clone());
+        assert_eq!(apps, apps_db.apps);
+    }
+}
