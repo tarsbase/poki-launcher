@@ -15,8 +15,8 @@ edition = "2018"
 libc = "0.2"
 gtk = "0.7"
 nix = "0.15"
-lib-poki-launcher = { path = "../lib-poki-launcher" }
-poki-launcher-notifier = { path = "../poki-launcher-notifier" }
+lib-poki-launcher = { version = "0.1.0", path = "../lib-poki-launcher" }
+poki-launcher-notifier = { version = "0.1.0", path = "../poki-launcher-notifier" }
 structopt = "0.3"
 rmp-serde = "0.14.0"
 serde_json = "1.0"

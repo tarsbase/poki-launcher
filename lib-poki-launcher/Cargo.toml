@@ -21,7 +21,7 @@ uuid = { version = "0.7", features = ["serde", "v4"]}
 config = "0.9"
 directories = "2.0"
 lazy_static = "1.4"
-poki-launcher-x11 = { path = "../poki-launcher-x11"}
+poki-launcher-x11 = { version = "0.1.0", path = "../poki-launcher-x11" }
 nix = "0.15"
 shellexpand = "1.0"
 itertools = "0.8"
