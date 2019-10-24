@@ -1,6 +1,6 @@
 [package]
 name = "poki-launcher-x11"
-version = "0.0.0"
+version = "0.1.0"
 authors = ["Ben Aaron <benaagoldberg@gmail.com>"]
 description = "A library for poki-launcher to do X11 stuff"
 homepage = "https://github.com/zethra/poki-launcher"

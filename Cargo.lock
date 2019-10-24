@@ -542,7 +542,7 @@ dependencies = [
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nix 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "poki-launcher-x11 0.0.0",
+ "poki-launcher-x11 0.1.0",
  "rmp-serde 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust-ini 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.99 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -719,7 +719,7 @@ dependencies = [
 
 [[package]]
 name = "poki-launcher-x11"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "proc-macro-error"
