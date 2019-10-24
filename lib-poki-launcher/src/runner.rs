@@ -16,7 +16,7 @@
  */
 use failure::{Error, Fail};
 use nix::unistd::{getpid, setpgid};
-use poki_launcher_x11::forground;
+use poki_launcher_x11::foreground;
 use std::os::unix::process::CommandExt as _;
 use std::process::{Command, Stdio};
 
@@ -60,7 +60,7 @@ impl App {
             exec: self.exec.clone(),
             err: e.into(),
         })?;
-        forground(cmd);
+        foreground(cmd);
         Ok(())
     }
 }

@@ -23,7 +23,7 @@ use x11::xlib::{
     XClientMessageEvent, XDefaultRootWindow, XInternAtom, XMapRaised, XOpenDisplay, XSendEvent,
 };
 
-pub fn forground(name: &str) -> bool {
+pub fn foreground(name: &str) -> bool {
     Command::new("wmctrl")
         .arg("-a")
         .arg(&name)
@@ -32,14 +32,14 @@ pub fn forground(name: &str) -> bool {
         .success()
 }
 
-pub fn _forground(pid: u64) {
+pub fn _foreground(pid: u64) {
     let mut success = false;
     let mut pids = VecDeque::from(vec![pid]);
 
     while !pids.is_empty() {
         let pid = pids.pop_front().unwrap();
         println!("Trying: {}", pid);
-        if forground_pid(pid).is_ok() {
+        if foreground_pid(pid).is_ok() {
             println!("{} success", pid);
             success = true;
         }
@@ -67,7 +67,7 @@ fn get_children(pid: u64) -> Vec<u64> {
         .collect()
 }
 
-fn forground_pid(pid: u64) -> Result<(), &'static str> {
+fn foreground_pid(pid: u64) -> Result<(), &'static str> {
     unsafe {
         let disp = XOpenDisplay(libc::PT_NULL as *const i8);
         let msg = CString::new("_NET_ACTIVE_WINDOW").expect("CString::new failed");
