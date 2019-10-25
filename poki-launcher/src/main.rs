@@ -64,13 +64,14 @@ fn main() {
             start_ui();
         }
     } else {
-        let env = Env::new().filter("POKI_LOGGER");
-        env_logger::init_from_env(env);
         start_ui();
     }
 }
 
 fn start_ui() {
+    let env = Env::new().filter("POKI_LOGGER");
+    env_logger::init_from_env(env);
+
     use std::ffi::CString;
     let app_name = std::env::args().next().unwrap();
     let app_name = CString::new(app_name).unwrap();
