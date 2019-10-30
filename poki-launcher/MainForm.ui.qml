@@ -33,6 +33,11 @@ Rectangle {
 		apps_model.search(input.text)
 	}
 
+	function hide() {
+		input.clear();
+		apps_model.hide();
+	}
+
 	Shortcut {
 		sequence: "F5"
 		onActivated: scan()
@@ -62,7 +67,7 @@ Rectangle {
 				Keys.onUpPressed: apps_model.up()
 				Keys.onDownPressed: apps_model.down()
 				Keys.onReturnPressed: run()
-				Keys.onEscapePressed: apps_model.hide()
+				Keys.onEscapePressed: hide()
 			}
 		}
 
