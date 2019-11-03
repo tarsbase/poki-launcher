@@ -21,6 +21,7 @@ use lazy_static::lazy_static;
 use lib_poki_launcher::prelude::*;
 use log::{error, trace, warn};
 use poki_launcher_notifier::{self as notifier, Notifier};
+use poki_launcher_x11::foreground;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -70,6 +71,7 @@ fn setup_notifier(
             Msg::Show => {
                 window_visible.store(true, Ordering::Relaxed);
                 emit.visible_changed();
+                foreground("Poki Launcher");
             }
             Msg::Exit => {
                 drop(rx);

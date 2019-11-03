@@ -19,6 +19,9 @@ import QtQuick.Layouts 1.0
 
 Rectangle {
     color: "#282a36"
+	border.color: "#2e303b"
+	// border.color: "#1c1d24"
+	border.width: 2
 
 	function run() {
 		apps_model.run();

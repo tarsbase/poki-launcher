@@ -24,7 +24,7 @@ Window {
     width: 500
     height: 500
     title: qsTr("Poki Launcher")
-    flags: Qt.WindowActive //| Qt.WindowStaysOnTopHint
+    flags: Qt.WindowActive | Qt.Dialog | Qt.FramelessWindowHint
 
     AppsModel {
         id: apps_model

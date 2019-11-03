@@ -701,6 +701,7 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nix 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "poki-launcher-notifier 0.1.0",
+ "poki-launcher-x11 0.1.0",
  "rmp-serde 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust_qt_binding_generator 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
