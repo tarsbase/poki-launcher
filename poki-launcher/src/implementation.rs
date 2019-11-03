@@ -48,6 +48,7 @@ lazy_static! {
         db_file.push("apps.db");
         db_file
     };
+    pub static ref SHOW_ON_START: Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
 }
 
 pub struct AppsModel {
@@ -97,8 +98,7 @@ impl AppsModelTrait for AppsModel {
             apps
         };
 
-        let window_visible = Arc::new(AtomicBool::new(true));
-        setup_notifier(emit.clone(), window_visible.clone()).expect("Failed to setup notifier");
+        setup_notifier(emit.clone(), SHOW_ON_START.clone()).expect("Failed to setup notifier");
 
         AppsModel {
             emit,
@@ -106,7 +106,7 @@ impl AppsModelTrait for AppsModel {
             list: Vec::new(),
             apps,
             selected_item: String::new(),
-            window_visible,
+            window_visible: SHOW_ON_START.clone(),
             config,
         }
     }

@@ -22,9 +22,10 @@ pub mod interface {
 
 use env_logger::Env;
 use human_panic::setup_panic;
-use implementation::DB_PATH;
+use implementation::{DB_PATH, SHOW_ON_START};
 use lib_poki_launcher::prelude::AppsDB;
 use poki_launcher_notifier as notifier;
+use std::sync::atomic::Ordering;
 use structopt::StructOpt;
 
 extern "C" {
@@ -36,6 +37,8 @@ extern "C" {
 struct Opt {
     #[structopt(long)]
     dump_db: bool,
+    #[structopt(long)]
+    no_show: bool,
 }
 
 fn main() {
@@ -47,6 +50,7 @@ fn main() {
     });
 
     let opt = Opt::from_args();
+    SHOW_ON_START.store(!opt.no_show, Ordering::Relaxed);
     if opt.dump_db {
         use std::fs::File;
 
