@@ -35,8 +35,10 @@ extern "C" {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "poki-launcher", about = "Poki App Launcher")]
 struct Opt {
+    /// Dump the apps database to stdout as json and exit
     #[structopt(long)]
     dump_db: bool,
+    /// Start the daemon without showing the launcher window
     #[structopt(long)]
     no_show: bool,
 }
