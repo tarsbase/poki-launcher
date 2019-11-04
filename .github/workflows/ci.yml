@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v1
 
       - name: Run cargo check
-        uses: zethra/poki-launcher@v1
+        uses: zethra/poki-launcher-runner@0.1
         with:
           command: cargo check
 
@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v1
 
       - name: Run cargo test
-        uses: zethra/poki-launcher@v1
+        uses: zethra/poki-launcher-runner@0.1
         with:
           command: cargo test
 
@@ -41,13 +41,13 @@ jobs:
         uses: actions/checkout@v1
 
       - name: Run cargo fmt
-        uses: zethra/poki-launcher@v1
+        uses: zethra/poki-launcher-runner@0.1
         with:
           command: cargo fmt
           args: --all -- --check
 
       - name: Run cargo clippy
-        uses: zethra/poki-launcher@v1
+        uses: zethra/poki-launcher-runner@0.1
         with:
           command: cargo clippy
           args: -- -D warnings
