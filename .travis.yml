@@ -1,0 +1,10 @@
+language: rust
+
+services:
+  - docker
+
+before_install:
+  - docker pull zethra/poki-launcher-builder:latest
+
+script:
+  - docker run -v .:/root/build zethra/poki-launcher-builder:latest bash scripts/ci.sh
