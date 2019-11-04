@@ -16,17 +16,10 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v1
 
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
       - name: Run cargo check
-        uses: actions-rs/cargo@v1
+        uses: zethra/poki-launcher@v1
         with:
-          command: check
+          command: cargo check
 
   test:
     name: Test Suite
@@ -35,17 +28,10 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v1
 
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
       - name: Run cargo test
-        uses: actions-rs/cargo@v1
+        uses: zethra/poki-launcher@v1
         with:
-          command: test
+          command: cargo test
 
   lints:
     name: Lints
@@ -54,22 +40,14 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v1
 
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: rustfmt, clippy
-
       - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
+        uses: zethra/poki-launcher@v1
         with:
-          command: fmt
+          command: cargo fmt
           args: --all -- --check
 
       - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
+        uses: zethra/poki-launcher@v1
         with:
-          command: clippy
+          command: cargo clippy
           args: -- -D warnings

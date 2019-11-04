@@ -1,0 +1,12 @@
+name: 'Poki Launcher Runner'
+description: 'Run a script with Poki Launcher's dependencies installed'
+inputs:
+  command:
+    description: 'Command to run'
+    required: true
+runs:
+  using: 'docker'
+  image: 'zethra/poki-launcher-builder'
+  args:
+    - -v .:/root/build
+    - ${{ inputs.command }}
