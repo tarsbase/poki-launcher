@@ -24,7 +24,7 @@ use poki_launcher_notifier::{self as notifier, Notifier};
 use poki_launcher_x11::foreground;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 const MAX_APPS_SHOWN: usize = 5;
@@ -55,10 +55,11 @@ pub struct AppsModel {
     emit: AppsModelEmitter,
     model: AppsModelList,
     list: Vec<App>,
-    apps: AppsDB,
+    apps: Arc<Mutex<AppsDB>>,
     selected_item: String,
     window_visible: Arc<AtomicBool>,
     config: Config,
+    scanning: Arc<AtomicBool>,
 }
 
 fn setup_notifier(
@@ -99,15 +100,17 @@ impl AppsModelTrait for AppsModel {
         };
 
         setup_notifier(emit.clone(), SHOW_ON_START.clone()).expect("Failed to setup notifier");
+        let scanning = Arc::new(AtomicBool::new(false));
 
         AppsModel {
             emit,
             model,
             list: Vec::new(),
-            apps,
+            apps: Arc::new(Mutex::new(apps)),
             selected_item: String::new(),
             window_visible: SHOW_ON_START.clone(),
             config,
+            scanning,
         }
     }
 
@@ -133,6 +136,14 @@ impl AppsModelTrait for AppsModel {
 
     fn set_visible(&mut self, value: bool) {
         self.window_visible.store(value, Ordering::Relaxed);
+    }
+
+    fn is_scanning(&self) -> bool {
+        self.scanning.load(Ordering::Relaxed)
+    }
+
+    fn set_is_scanning(&mut self, value: bool) {
+        self.scanning.store(value, Ordering::Relaxed);
     }
 
     fn name(&self, index: usize) -> &str {
@@ -161,15 +172,36 @@ impl AppsModelTrait for AppsModel {
 
     fn scan(&mut self) {
         trace!("Scanning...");
-        let errors = self.apps.rescan_desktop_entries(&self.config.app_paths);
-        log_errs(&errors);
-        let _ = self.apps.save(&*DB_PATH);
-        trace!("Scanning...done");
+        self.scanning.store(true, Ordering::Relaxed);
+        self.emit.is_scanning_changed();
+        let mut emit = self.emit.clone();
+        let scanning = self.scanning.clone();
+        let apps = self.apps.clone();
+        let config = self.config.clone();
+        thread::spawn(move || {
+            let (app_list, errors) = scan_desktop_entries(&config.app_paths);
+            let apps = {
+                let mut apps = apps.lock().expect("Apps Mutex Poisoned");
+                apps.merge_new_entries(app_list);
+                apps.clone()
+            };
+            if let Err(e) = apps.save(&*DB_PATH) {
+                error!("Saving database failed: {}", e);
+            }
+            log_errs(&errors);
+            scanning.store(false, Ordering::Relaxed);
+            emit.is_scanning_changed();
+            trace!("Scanning...done");
+        });
     }
 
     fn search(&mut self, text: String) {
         self.model.begin_reset_model();
-        self.list = self.apps.get_ranked_list(&text, Some(MAX_APPS_SHOWN));
+        self.list = self
+            .apps
+            .lock()
+            .expect("Apps Mutex Poisoned")
+            .get_ranked_list(&text, Some(MAX_APPS_SHOWN));
         if !self.list.is_empty() {
             self.selected_item = self.list[0].uuid.clone();
         } else {
@@ -229,8 +261,9 @@ impl AppsModelTrait for AppsModel {
         if let Err(err) = app.run() {
             error!("{}", err);
         }
-        self.apps.update(app);
-        self.apps.save(&*DB_PATH).unwrap();
+        let mut apps = self.apps.lock().expect("Apps Mutex Poisoned");
+        apps.update(app);
+        apps.save(&*DB_PATH).unwrap();
         self.list.clear();
         self.model.end_reset_model();
     }

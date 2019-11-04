@@ -16,12 +16,12 @@
  */
 use crate::DIRS;
 use failure::Error;
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use std::default::Default;
 use std::fs::create_dir;
 
 /// User settings.
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     /// The list of directories to search for desktop entries in.
     pub app_paths: Vec<String>,

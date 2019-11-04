@@ -93,7 +93,7 @@ pub fn desktop_entires(paths: &[String]) -> (Vec<PathBuf>, Vec<Error>) {
 }
 
 /// Get a list of apps for a list of paths to search.
-fn scan_desktop_entries(paths: &[String]) -> (Vec<App>, Vec<Error>) {
+pub fn scan_desktop_entries(paths: &[String]) -> (Vec<App>, Vec<Error>) {
     let (entries, mut errors) = desktop_entires(&paths);
     let (apps, errs): (Vec<_>, Vec<_>) = entries
         .into_iter()

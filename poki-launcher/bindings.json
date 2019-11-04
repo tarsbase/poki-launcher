@@ -16,6 +16,10 @@
                 "visible": {
                     "type": "bool",
                     "write": true
+                },
+                "is_scanning": {
+                    "type": "bool",
+                    "write": true
                 }
             },
             "itemProperties": {

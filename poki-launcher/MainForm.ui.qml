@@ -16,11 +16,11 @@
  */
 import QtQuick 2.6
 import QtQuick.Layouts 1.0
+ import QtQuick.Controls 1.1
 
 Rectangle {
     color: "#282a36"
 	border.color: "#2e303b"
-	// border.color: "#1c1d24"
 	border.width: 2
 
 	function run() {
@@ -71,6 +71,16 @@ Rectangle {
 				Keys.onDownPressed: apps_model.down()
 				Keys.onReturnPressed: run()
 				Keys.onEscapePressed: hide()
+			}
+
+			BusyIndicator {
+				id: scan_ind
+				running: apps_model.is_scanning
+				anchors.right: input_box.right
+				anchors.verticalCenter: input_box.verticalCenter
+				anchors.rightMargin: input_box.height * 0.1
+				height: input_box.height * 0.8
+				width: input_box.height * 0.8
 			}
 		}
 
