@@ -272,7 +272,16 @@ impl AppsModelTrait for AppsModel {
         if Path::new(&name).is_absolute() {
             name
         } else {
-            let theme = IconTheme::get_default().unwrap();
+            let theme = if self.config.icon_theme.is_some() {
+                use std::ops::Deref as _;
+                let theme = IconTheme::new();
+                let name = self.config.icon_theme.as_ref().map(|v| v.deref());
+                theme.set_custom_theme(name);
+                theme
+            } else {
+                IconTheme::get_default().expect("Couldn't get default icon theme.")
+            };
+            // let theme = IconTheme::get_default().unwrap();
             let icon = match theme.lookup_icon(&name, 128, IconLookupFlags::empty()) {
                 Some(icon) => icon,
                 None => {

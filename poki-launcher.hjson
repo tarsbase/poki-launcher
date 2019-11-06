@@ -1,12 +1,15 @@
 {
+    # Locations to search apps
     app_paths: [
         # System apps
         "/usr/share/applications/"
         # User apps
-        // ~/.local/share/applications/
+        ~/.local/share/applications/
         # Snap apps
         // "/var/lib/snapd/desktop/applications"
         # Flatpak apps
         // /var/lib/flatpak/exports/share/applications
     ]
+    # Set a custom icon theme
+    // icon_theme: "Papirus"
 }
