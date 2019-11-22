@@ -18,8 +18,8 @@ use crate::db::AppsDB;
 use crate::desktop_entry::{parse_desktop_file, EntryParseError};
 use crate::App;
 use failure::{Error, Fail};
-use std::fs::read_dir;
 use std::path::PathBuf;
+use walkdir::WalkDir;
 
 /// An error from scanning for desktop entries.
 #[derive(Debug, Fail)]
@@ -56,36 +56,23 @@ pub fn desktop_entires(paths: &[String]) -> (Vec<PathBuf>, Vec<Error>) {
                 continue;
             }
         };
-        match read_dir(&*expanded) {
-            Ok(entries) => {
-                for entry in entries {
-                    match entry {
-                        Ok(entry) => {
-                            if entry.file_name().to_str().unwrap().contains(".desktop") {
-                                files.push(entry.path())
-                            }
-                        }
-                        Err(e) => {
-                            errors.push(
-                                ScanError::ScanDirectory {
-                                    dir: loc.clone(),
-                                    err: e.into(),
-                                }
-                                .into(),
-                            );
-                            continue;
-                        }
+        for entry in WalkDir::new(&*expanded) {
+            match entry {
+                Ok(entry) => {
+                    if entry.file_name().to_str().unwrap().contains(".desktop") {
+                        files.push(entry.path().to_owned())
                     }
                 }
-            }
-            Err(e) => {
-                errors.push(
-                    ScanError::ScanDirectory {
-                        dir: loc.clone(),
-                        err: e.into(),
-                    }
-                    .into(),
-                );
+                Err(e) => {
+                    errors.push(
+                        ScanError::ScanDirectory {
+                            dir: loc.clone(),
+                            err: e.into(),
+                        }
+                        .into(),
+                    );
+                    continue;
+                }
             }
         }
     }

@@ -42,3 +42,4 @@ poki-launcher-x11 = { version = "0.1.0", path = "../poki-launcher-x11" }
 nix = "0.15"
 shellexpand = "1.0"
 itertools = "0.8"
+walkdir = "2.2"
