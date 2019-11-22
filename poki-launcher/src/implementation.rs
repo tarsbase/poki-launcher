@@ -99,6 +99,18 @@ impl AppsModelTrait for AppsModel {
             apps
         };
 
+        let paths = config.app_paths.clone();
+        thread::spawn(move || {
+            trace!("Scanning...");
+            let (app_list, errors) = scan_desktop_entries(&paths);
+            let apps = AppsDB::new(app_list);
+            if let Err(e) = apps.save(&*DB_PATH) {
+                error!("Saving database failed: {}", e);
+            }
+            log_errs(&errors);
+            trace!("Scanning...done");
+        });
+
         setup_notifier(emit.clone(), SHOW_ON_START.clone()).expect("Failed to setup notifier");
         let scanning = Arc::new(AtomicBool::new(false));
 

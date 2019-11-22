@@ -19,6 +19,7 @@ use std::cmp::Ordering;
 
 use super::App;
 use failure::{Error, Fail};
+use file_lock::FileLock;
 use fuzzy_matcher::skim::fuzzy_match;
 use rmp_serde as rmp;
 use serde_derive::{Deserialize, Serialize};
@@ -57,17 +58,15 @@ impl AppsDB {
     ///
     /// * `path` - Location of the database file
     pub fn load(path: impl AsRef<Path>) -> Result<AppsDB, Error> {
-        let path_str = path.as_ref().to_string_lossy().into_owned();
-        Ok(
-            rmp::from_read(File::open(&path).map_err(|e| AppDBError::FileOpen {
-                file: path_str.clone(),
-                err: e.into(),
-            })?)
-            .map_err(|e| AppDBError::ParseDB {
-                file: path_str.clone(),
-                err: e.into(),
-            })?,
-        )
+        let path = path.as_ref().display().to_string();
+        let lock = FileLock::lock(&path, true, false).map_err(|e| AppDBError::FileOpen {
+            file: path.to_owned(),
+            err: e.into(),
+        })?;
+        Ok(rmp::from_read(&lock.file).map_err(|e| AppDBError::ParseDB {
+            file: path.to_owned(),
+            err: e.into(),
+        })?)
     }
 
     /// Save database file.
@@ -76,16 +75,29 @@ impl AppsDB {
     ///
     /// * `path` - Location of the database file
     pub fn save(&self, path: impl AsRef<Path>) -> Result<(), Error> {
-        let path_str = path.as_ref().to_string_lossy().into_owned();
+        let path = path.as_ref().display().to_string();
         let buf = rmp::to_vec(&self).expect("Failed to encode apps db");
-        let mut file = File::create(&path).map_err(|e| AppDBError::FileCreate {
-            file: path_str.clone(),
-            err: e.into(),
-        })?;
-        file.write_all(&buf).map_err(|e| AppDBError::FileWrite {
-            file: path_str.clone(),
-            err: e.into(),
-        })?;
+        if Path::new(&path).exists() {
+            let mut lock = FileLock::lock(&path, true, true).map_err(|e| AppDBError::FileOpen {
+                file: path.to_owned(),
+                err: e.into(),
+            })?;
+            lock.file
+                .write_all(&buf)
+                .map_err(|e| AppDBError::FileWrite {
+                    file: path.to_owned(),
+                    err: e.into(),
+                })?;
+        } else {
+            let mut file = File::create(&path).map_err(|e| AppDBError::FileCreate {
+                file: path.to_owned(),
+                err: e.into(),
+            })?;
+            file.write_all(&buf).map_err(|e| AppDBError::FileWrite {
+                file: path.to_owned(),
+                err: e.into(),
+            })?;
+        }
         Ok(())
     }
 
