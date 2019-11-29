@@ -14,23 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
-mod implementation;
-pub mod interface {
-    #![allow(clippy::all)]
-    include!(concat!(env!("OUT_DIR"), "/src/interface.rs"));
-}
 
+mod ui;
+
+use crate::ui::{DB_PATH, SHOW_ON_START};
 use env_logger::Env;
 use human_panic::setup_panic;
-use implementation::{DB_PATH, SHOW_ON_START};
 use lib_poki_launcher::prelude::AppsDB;
 use poki_launcher_notifier as notifier;
+use qmetaobject::*;
 use std::sync::atomic::Ordering;
 use structopt::StructOpt;
-
-extern "C" {
-    fn main_cpp(app: *const std::os::raw::c_char);
-}
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "poki-launcher", about = "Poki App Launcher")]
@@ -77,11 +71,21 @@ fn main() {
 fn start_ui() {
     let env = Env::new().filter("POKI_LOGGER");
     env_logger::init_from_env(env);
-
-    use std::ffi::CString;
-    let app_name = std::env::args().next().unwrap();
-    let app_name = CString::new(app_name).unwrap();
-    unsafe {
-        main_cpp(app_name.as_ptr());
-    }
+    let apps = if DB_PATH.exists() {
+        AppsDB::load(&*DB_PATH).unwrap()
+    } else {
+        ui::CONF.with(|conf| {
+            let (apps, errors) = AppsDB::from_desktop_entries(&conf.app_paths);
+            ui::log_errs(&errors);
+            apps.save(&*DB_PATH).unwrap();
+            apps
+        })
+    };
+    let mut lock = ui::APPS.lock().unwrap();
+    *lock = Some(apps);
+    drop(lock);
+    ui::init_ui();
+    let mut engine = QmlEngine::new();
+    engine.load_file("qrc:/ui/main.qml".into());
+    engine.exec();
 }

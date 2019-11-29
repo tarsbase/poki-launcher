@@ -20,31 +20,32 @@ import PokiLauncher 1.0
 
 Window {
     id: window
-    visible: apps_model.visible
+    visible: launcher.visible
     width: 500
     height: 500
     title: qsTr("Poki Launcher")
     flags: Qt.WindowActive | Qt.Dialog | Qt.FramelessWindowHint
 
-    AppsModel {
-        id: apps_model
+    PokiLauncher {
+        id: launcher
     }
 
     Component.onCompleted: {
-        setX(Screen.width / 2 - width / 2 + Screen.virtualX);
-        setY(Screen.height / 2 - height / 2 + Screen.virtualY);
+        launcher.init()
+        setX(Screen.width / 2 - width / 2 + Screen.virtualX)
+        setY(Screen.height / 2 - height / 2 + Screen.virtualY)
     }
 
     onVisibleChanged: {
         if (visible) {
-            raise();
-            requestActivate();
+            raise()
+            requestActivate()
             show()
         }
     }
 
     onClosing: {
-        apps_model.exit();
+        apps_model.exit()
     }
 
 

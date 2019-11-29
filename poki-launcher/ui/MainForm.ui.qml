@@ -16,7 +16,7 @@
  */
 import QtQuick 2.6
 import QtQuick.Layouts 1.0
- import QtQuick.Controls 1.1
+import QtQuick.Controls 1.1
 
 Rectangle {
     color: "#282a36"
@@ -24,21 +24,21 @@ Rectangle {
 	border.width: 2
 
 	function run() {
-		apps_model.run();
+		launcher.run();
 		input.clear();
-		apps_model.hide();
+		launcher.hide();
 	}
 
 	function scan() {
 		window.title = qsTr("Poki Launcher - Scanning...");
-		apps_model.scan();
+		launcher.scan();
 		window.title = qsTr("Poki Launcher");
-		apps_model.search(input.text)
+		launcher.search(input.text)
 	}
 
 	function hide() {
 		input.clear();
-		apps_model.hide();
+		launcher.hide();
 	}
 
 	Shortcut {
@@ -66,16 +66,16 @@ Rectangle {
 				padding: 10
 				anchors.verticalCenter: input_box.verticalCenter
 				font.pixelSize: window.height * 0.1 * 0.4
-				onTextChanged: apps_model.search(text)
-				Keys.onUpPressed: apps_model.up()
-				Keys.onDownPressed: apps_model.down()
+				onTextChanged: launcher.search(text)
+				Keys.onUpPressed: launcher.up()
+				Keys.onDownPressed: launcher.down()
 				Keys.onReturnPressed: run()
 				Keys.onEscapePressed: hide()
 			}
 
 			BusyIndicator {
 				id: scan_ind
-				running: apps_model.is_scanning
+				running: launcher.scanning
 				anchors.right: input_box.right
 				anchors.verticalCenter: input_box.verticalCenter
 				anchors.rightMargin: input_box.height * 0.1
@@ -91,7 +91,7 @@ Rectangle {
 			Layout.preferredHeight: window.height * 0.9
 			interactive: false
 
-			model: apps_model
+			model: launcher.model
 			delegate: Item {
 				height: app_list.height * 0.2
 				width: window.width
@@ -101,7 +101,7 @@ Rectangle {
 					anchors.topMargin: 1
 					anchors.bottomMargin: 1
 					id: item
-					color: (uuid == apps_model.selected) ? "#44475a" : "#282a36"
+					color: (uuid == launcher.selected) ? "#44475a" : "#282a36"
 					RowLayout {
 						anchors.fill: parent
 
@@ -111,7 +111,7 @@ Rectangle {
 							Layout.preferredHeight: item.height * 0.8
 							Layout.alignment: Qt.AlignLeft
 							fillMode: Image.PreserveAspectFit
-							source: "file:///" + apps_model.get_icon(icon)
+							source: "file:///" + launcher.get_icon(icon)
 						}
 
 						Text {
