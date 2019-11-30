@@ -16,19 +16,15 @@
  */
 use cstr::*;
 use failure::Error;
-use gtk::{Application, IconLookupFlags, IconTheme, IconThemeExt};
 use lazy_static::lazy_static;
 use lib_poki_launcher::prelude::*;
-use log::{error, trace, warn};
+use log::{error, trace};
 use poki_launcher_notifier::{self as notifier, Notifier};
 use poki_launcher_x11::foreground;
-use qmetaobject::listmodel::QAbstractListModel;
 use qmetaobject::*;
-use std::cell::RefCell;
-use std::collections::HashMap;
+use std::cell::{Cell, RefCell};
 use std::convert::From;
-use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -53,20 +49,20 @@ lazy_static! {
         db_file.push("apps.db");
         db_file
     };
-    pub static ref SHOW_ON_START: Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
     pub static ref APPS: Arc<Mutex<Option<AppsDB>>> = Arc::new(Mutex::new(None));
 }
 
 thread_local! {
     pub static CONF: Config = Config::load().unwrap();
+    pub static SHOW_ON_START: Cell<bool> = Cell::new(true);
 }
 
-#[derive(QObject)]
+#[derive(QObject, Default)]
 struct PokiLauncher {
     base: qt_base_class!(trait QObject),
     list: Vec<App>,
-    model: qt_property!(RefCell<SimpleListModel<QApp>>),
-    selected: qt_property!(QString; NOTIFY selected_changed WRITE set_selected),
+    model: qt_property!(RefCell<SimpleListModel<QApp>>; NOTIFY model_changed),
+    selected: qt_property!(String; NOTIFY selected_changed WRITE set_selected),
     visible: qt_property!(bool; NOTIFY visible_changed),
     scanning: qt_property!(bool; NOTIFY scanning_changed),
 
@@ -76,20 +72,44 @@ struct PokiLauncher {
     down: qt_method!(fn(&mut self)),
     up: qt_method!(fn(&mut self)),
     run: qt_method!(fn(&mut self)),
-    get_icon: qt_method!(fn(&mut self, name: String) -> String),
     hide: qt_method!(fn(&mut self)),
     exit: qt_method!(fn(&mut self)),
 
     selected_changed: qt_signal!(),
     visible_changed: qt_signal!(),
     scanning_changed: qt_signal!(),
+    model_changed: qt_signal!(),
 }
 
 impl PokiLauncher {
-    fn init(&mut self) {}
+    fn init(&mut self) {
+        self.visible = SHOW_ON_START.with(|b| b.get());
+        self.visible_changed();
+        let rx = Notifier::start().unwrap();
+        let qptr = QPointer::from(&*self);
+        let show = qmetaobject::queued_callback(move |()| {
+            qptr.as_pinned().map(|self_| {
+                self_.borrow_mut().visible = true;
+                self_.borrow().visible_changed();
+            });
+        });
+        thread::spawn(move || loop {
+            use notifier::Msg;
+            match rx.recv().unwrap() {
+                Msg::Show => {
+                    show(());
+                    foreground("Poki Launcher");
+                }
+                Msg::Exit => {
+                    drop(rx);
+                    std::process::exit(0);
+                }
+            }
+        });
+    }
 
     fn set_selected<T: Into<QString>>(&mut self, selected: T) {
-        self.selected = selected.into();
+        self.selected = selected.into().into();
         self.selected_changed();
     }
 
@@ -112,18 +132,43 @@ impl PokiLauncher {
 
     fn scan(&mut self) {
         trace!("Scanning...");
+        self.scanning = true;
+        self.scanning_changed();
+        let config = CONF.with(|c| c.clone());
+        let qptr = QPointer::from(&*self);
+        let done = qmetaobject::queued_callback(move |()| {
+            qptr.as_pinned().map(|self_| {
+                self_.borrow_mut().scanning = false;
+                self_.borrow().scanning_changed();
+            });
+        });
+        thread::spawn(move || {
+            let (app_list, errors) = scan_desktop_entries(&config.app_paths);
+            let mut lock = APPS.lock().expect("Apps Mutex Poisoned");
+            match *lock {
+                Some(ref mut apps) => {
+                    apps.merge_new_entries(app_list);
+                    if let Err(e) = apps.save(&*DB_PATH) {
+                        error!("Saving database failed: {}", e);
+                    }
+                }
+                None => panic!("APPS Not init"),
+            }
+            log_errs(&errors);
+            done(());
+            trace!("Scanning...done");
+        });
     }
 
     fn down(&mut self) {
         if self.list.is_empty() {
             return;
         }
-        let selected: String = self.selected.clone().into();
         let (idx, _) = self
             .list
             .iter()
             .enumerate()
-            .find(|(_, app)| app.uuid == selected)
+            .find(|(_, app)| app.uuid == self.selected)
             .unwrap();
         if idx >= self.list.len() - 1 {
             self.selected = self.list[self.list.len() - 1].uuid.clone().into();
@@ -137,17 +182,16 @@ impl PokiLauncher {
         if self.list.is_empty() {
             return;
         }
-        let selected: String = self.selected.clone().into();
         let (idx, _) = self
             .list
             .iter()
             .enumerate()
-            .find(|(_, app)| app.uuid == selected)
+            .find(|(_, app)| app.uuid == self.selected)
             .unwrap();
         if idx == 0 {
-            self.selected = self.list[0].uuid.clone().into();
+            self.selected = self.list[0].uuid.clone();
         } else {
-            self.selected = self.list[idx - 1].uuid.clone().into();
+            self.selected = self.list[idx - 1].uuid.clone();
         }
         self.selected_changed();
     }
@@ -175,10 +219,6 @@ impl PokiLauncher {
         self.selected_changed();
     }
 
-    fn get_icon(&self, name: String) -> String {
-        String::default()
-    }
-
     fn hide(&mut self) {
         self.visible = false;
         self.visible_changed();
@@ -194,44 +234,44 @@ impl PokiLauncher {
     }
 }
 
-impl Default for PokiLauncher {
-    fn default() -> Self {
-        PokiLauncher {
-            visible: true,
-            base: Default::default(),
-            list: Default::default(),
-            model: Default::default(),
-            selected: Default::default(),
-            init: Default::default(),
-            scanning: Default::default(),
-            scanning_changed: Default::default(),
-            visible_changed: Default::default(),
-            selected_changed: Default::default(),
-            search: Default::default(),
-            down: Default::default(),
-            up: Default::default(),
-            scan: Default::default(),
-            get_icon: Default::default(),
-            hide: Default::default(),
-            run: Default::default(),
-            exit: Default::default(),
-        }
-    }
-}
+// impl Default for PokiLauncher {
+//     fn default() -> Self {
+//         PokiLauncher {
+//             visible: true,
+//             base: Default::default(),
+//             list: Default::default(),
+//             model: Default::default(),
+//             selected: Default::default(),
+//             init: Default::default(),
+//             scanning: Default::default(),
+//             scanning_changed: Default::default(),
+//             visible_changed: Default::default(),
+//             selected_changed: Default::default(),
+//             search: Default::default(),
+//             down: Default::default(),
+//             up: Default::default(),
+//             scan: Default::default(),
+//             get_icon: Default::default(),
+//             hide: Default::default(),
+//             run: Default::default(),
+//             exit: Default::default(),
+//         }
+//     }
+// }
 
 #[derive(Default, Clone, SimpleListItem)]
 struct QApp {
-    pub name: QString,
-    pub uuid: QString,
-    pub icon: QString,
+    pub name: String,
+    pub uuid: String,
+    pub icon: String,
 }
 
 impl From<App> for QApp {
     fn from(app: App) -> QApp {
         QApp {
-            name: app.name.into(),
-            uuid: app.uuid.into(),
-            icon: app.icon.into(),
+            name: app.name,
+            uuid: app.uuid,
+            icon: app.icon,
         }
     }
 }

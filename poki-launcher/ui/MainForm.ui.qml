@@ -111,7 +111,7 @@ Rectangle {
 							Layout.preferredHeight: item.height * 0.8
 							Layout.alignment: Qt.AlignLeft
 							fillMode: Image.PreserveAspectFit
-							source: "file:///" + launcher.get_icon(icon)
+							source: "image://icon/" + icon
 						}
 
 						Text {

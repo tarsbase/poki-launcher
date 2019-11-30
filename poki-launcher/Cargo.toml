@@ -28,7 +28,6 @@ edition = "2018"
 
 [dependencies]
 libc = "0.2"
-gtk = "0.7"
 nix = "0.15"
 lib-poki-launcher = { version = "0.1.0", path = "../lib-poki-launcher" }
 poki-launcher-notifier = { version = "0.1.0", path = "../poki-launcher-notifier" }
@@ -41,8 +40,10 @@ log = "0.4"
 env_logger = "0.7"
 failure = "0.1"
 human-panic = "1.0"
-qmetaobject = "0.1"
+qmetaobject = { path = "../../qmetaobject-rs/qmetaobject"}
 cstr = "0.1"
+cpp = "0.5"
 
 [build-dependencies]
-rust_qt_binding_generator = "0.3"
+cpp_build = "0.5"
+

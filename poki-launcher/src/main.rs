@@ -18,12 +18,13 @@
 mod ui;
 
 use crate::ui::{DB_PATH, SHOW_ON_START};
+use cpp::*;
 use env_logger::Env;
 use human_panic::setup_panic;
 use lib_poki_launcher::prelude::AppsDB;
 use poki_launcher_notifier as notifier;
 use qmetaobject::*;
-use std::sync::atomic::Ordering;
+use std::os::raw::c_void;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -46,7 +47,7 @@ fn main() {
     });
 
     let opt = Opt::from_args();
-    SHOW_ON_START.store(!opt.no_show, Ordering::Relaxed);
+    SHOW_ON_START.with(|b| b.set(!opt.no_show));
     if opt.dump_db {
         use std::fs::File;
 
@@ -68,6 +69,11 @@ fn main() {
     }
 }
 
+cpp! {{
+#include "src/icon.cpp"
+#include <QtCore/QLatin1String>
+}}
+
 fn start_ui() {
     let env = Env::new().filter("POKI_LOGGER");
     env_logger::init_from_env(env);
@@ -87,5 +93,8 @@ fn start_ui() {
     ui::init_ui();
     let mut engine = QmlEngine::new();
     engine.load_file("qrc:/ui/main.qml".into());
+    let provider = cpp!(unsafe [] -> *mut c_void as "IconProvider*" { return new IconProvider(); });
+    engine.add_image_provider("icon".into(), provider);
+    // cpp!(unsafe [engine as "QmlEngineHolder*"] { engine->engine->addImageProvider(QLatin1String("icon"), new IconProvider); });
     engine.exec();
 }
