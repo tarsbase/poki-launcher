@@ -15,6 +15,7 @@
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
 use failure::{Error, Fail};
+use log::debug;
 use nix::unistd::{getpid, setpgid};
 use poki_launcher_x11::foreground;
 use std::os::unix::process::CommandExt as _;
@@ -42,6 +43,7 @@ fn parse_exec<'a>(exec: &'a str) -> (&'a str, Vec<&'a str>) {
 impl App {
     /// Run the app.
     pub fn run(&self) -> Result<(), Error> {
+        debug!("Exec: `{}`", self.exec);
         let (cmd, args) = parse_exec(&self.exec);
         let mut command = Command::new(&cmd);
         command

@@ -132,6 +132,14 @@ Rectangle {
 						bottom: item.top
 					}
 				}
+
+				MouseArea {
+					anchors.fill: parent
+					onClicked: {
+						launcher.selected = uuid
+						run()
+					}
+				}
 			}
         }
     }
