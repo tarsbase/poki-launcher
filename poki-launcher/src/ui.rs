@@ -39,7 +39,7 @@ pub fn log_errs(errs: &[Error]) {
 lazy_static! {
     pub static ref DB_PATH: PathBuf = {
         use std::fs::create_dir;
-        let data_dir = DIRS.data_dir();
+        let data_dir = DIRS.cache_dir();
         if !data_dir.exists() {
             create_dir(&data_dir).unwrap_or_else(|_| {
                 panic!("Failed to create data dir: {}", data_dir.to_string_lossy())
