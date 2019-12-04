@@ -40,7 +40,7 @@ log = "0.4"
 env_logger = "0.7"
 failure = "0.1"
 human-panic = "1.0"
-qmetaobject = { path = "../../qmetaobject-rs/qmetaobject"}
+qmetaobject = { git = "https://github.com/zethra/qmetaobject-rs.git", rev = "8bd0121"}
 cstr = "0.1"
 cpp = "0.5"
 
