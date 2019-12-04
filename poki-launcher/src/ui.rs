@@ -62,7 +62,7 @@ struct PokiLauncher {
     base: qt_base_class!(trait QObject),
     list: Vec<App>,
     model: qt_property!(RefCell<SimpleListModel<QApp>>; NOTIFY model_changed),
-    selected: qt_property!(String; NOTIFY selected_changed WRITE set_selected),
+    selected: qt_property!(QString; NOTIFY selected_changed WRITE set_selected),
     visible: qt_property!(bool; NOTIFY visible_changed),
     scanning: qt_property!(bool; NOTIFY scanning_changed),
 
@@ -113,6 +113,10 @@ impl PokiLauncher {
         self.selected_changed();
     }
 
+    fn get_selected(&self) -> String {
+        self.selected.clone().into()
+    }
+
     fn search(&mut self, text: String) {
         let lock = APPS.lock().expect("Apps Mutex Poisoned");
         self.list = lock
@@ -120,14 +124,13 @@ impl PokiLauncher {
             .unwrap()
             .get_ranked_list(&text, Some(MAX_APPS_SHOWN));
         if !self.list.is_empty() {
-            self.selected = self.list[0].uuid.clone().into();
+            self.set_selected(self.list[0].uuid.clone());
         } else {
-            self.selected = Default::default();
+            self.set_selected(QString::default());
         }
         self.model
             .borrow_mut()
             .reset_data(self.list.clone().into_iter().map(QApp::from).collect());
-        self.selected_changed();
     }
 
     fn scan(&mut self) {
@@ -161,6 +164,7 @@ impl PokiLauncher {
     }
 
     fn down(&mut self) {
+        trace!("Down");
         if self.list.is_empty() {
             return;
         }
@@ -168,17 +172,17 @@ impl PokiLauncher {
             .list
             .iter()
             .enumerate()
-            .find(|(_, app)| app.uuid == self.selected)
+            .find(|(_, app)| app.uuid == self.get_selected())
             .unwrap();
         if idx >= self.list.len() - 1 {
-            self.selected = self.list[self.list.len() - 1].uuid.clone().into();
+            self.set_selected(self.list[self.list.len() - 1].uuid.clone());
         } else {
-            self.selected = self.list[idx + 1].uuid.clone().into();
+            self.set_selected(self.list[idx + 1].uuid.clone());
         }
-        self.selected_changed();
     }
 
     fn up(&mut self) {
+        trace!("Up");
         if self.list.is_empty() {
             return;
         }
@@ -186,22 +190,25 @@ impl PokiLauncher {
             .list
             .iter()
             .enumerate()
-            .find(|(_, app)| app.uuid == self.selected)
+            .find(|(_, app)| app.uuid == self.get_selected())
             .unwrap();
         if idx == 0 {
-            self.selected = self.list[0].uuid.clone();
+            self.set_selected(self.list[0].uuid.clone());
         } else {
-            self.selected = self.list[idx - 1].uuid.clone();
+            self.set_selected(self.list[idx - 1].uuid.clone());
         }
-        self.selected_changed();
     }
 
     fn run(&mut self) {
+        trace!("Run");
         if self.list.is_empty() {
             return;
         }
-        let selected: String = self.selected.clone().into();
-        let app = self.list.iter().find(|app| app.uuid == selected).unwrap();
+        let app = self
+            .list
+            .iter()
+            .find(|app| app.uuid == self.get_selected())
+            .unwrap();
         if let Err(err) = app.run() {
             error!("{}", err);
         }
@@ -215,16 +222,17 @@ impl PokiLauncher {
         }
         self.list.clear();
         self.model.borrow_mut().reset_data(Default::default());
-        self.selected = Default::default();
-        self.selected_changed();
+        self.set_selected(QString::default());
     }
 
     fn hide(&mut self) {
+        trace!("Hide");
         self.visible = false;
         self.visible_changed();
     }
 
     fn exit(&mut self) {
+        trace!("Exit");
         use nix::sys::signal::{kill, Signal};
         use nix::unistd::Pid;
 

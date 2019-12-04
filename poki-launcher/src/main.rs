@@ -95,6 +95,5 @@ fn start_ui() {
     engine.load_file("qrc:/ui/main.qml".into());
     let provider = cpp!(unsafe [] -> *mut c_void as "IconProvider*" { return new IconProvider(); });
     engine.add_image_provider("icon".into(), provider);
-    // cpp!(unsafe [engine as "QmlEngineHolder*"] { engine->engine->addImageProvider(QLatin1String("icon"), new IconProvider); });
     engine.exec();
 }

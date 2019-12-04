@@ -97,10 +97,10 @@ Rectangle {
 				width: window.width
 
 				Rectangle {
+					id: item
 					anchors.fill: parent
 					anchors.topMargin: 1
 					anchors.bottomMargin: 1
-					id: item
 					color: (uuid == launcher.selected) ? "#44475a" : "#282a36"
 					RowLayout {
 						anchors.fill: parent
