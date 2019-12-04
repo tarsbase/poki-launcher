@@ -123,10 +123,12 @@ impl PokiLauncher {
             .as_ref()
             .unwrap()
             .get_ranked_list(&text, Some(MAX_APPS_SHOWN));
-        if !self.list.is_empty() {
-            self.set_selected(self.list[0].uuid.clone());
-        } else {
-            self.set_selected(QString::default());
+        if !self.list.iter().any(|app| app.uuid == self.get_selected()) {
+            if !self.list.is_empty() {
+                self.set_selected(self.list[0].uuid.clone());
+            } else {
+                self.set_selected(QString::default());
+            }
         }
         self.model
             .borrow_mut()
