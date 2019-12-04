@@ -90,10 +90,31 @@ fn start_ui() {
     let mut lock = ui::APPS.lock().unwrap();
     *lock = Some(apps);
     drop(lock);
+    install_message_handler(logger);
     ui::init_ui();
     let mut engine = QmlEngine::new();
     engine.load_file("qrc:/ui/main.qml".into());
     let provider = cpp!(unsafe [] -> *mut c_void as "IconProvider*" { return new IconProvider(); });
     engine.add_image_provider("icon".into(), provider);
     engine.exec();
+}
+
+extern "C" fn logger(msg_type: QtMsgType, context: &QMessageLogContext, msg: &QString) {
+    use log::{log, Level};
+    let level = match msg_type {
+        QtMsgType::QtCriticalMsg | QtMsgType::QtFatalMsg => Level::Error,
+        QtMsgType::QtWarningMsg => Level::Warn,
+        QtMsgType::QtInfoMsg => Level::Info,
+        QtMsgType::QtDebugMsg => Level::Debug,
+    };
+    log!(
+        level,
+        "{}:{} [{:?} {} {}] {}",
+        context.file(),
+        context.line(),
+        msg_type,
+        context.category(),
+        context.function(),
+        msg
+    );
 }
