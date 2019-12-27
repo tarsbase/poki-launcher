@@ -27,6 +27,7 @@ pub struct Config {
     pub app_paths: Vec<String>,
     /// Name of the icon theme to pull icons from.
     pub icon_theme: Option<String>,
+    pub term_cmd: Option<String>,
 }
 
 impl Default for Config {
@@ -34,6 +35,7 @@ impl Default for Config {
         Config {
             app_paths: vec!["/usr/share/applications".to_owned()],
             icon_theme: None,
+            term_cmd: None,
         }
     }
 }

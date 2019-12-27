@@ -54,7 +54,7 @@ pub struct App {
     /// Display name of the app.
     pub name: String,
     /// The exec string used to run the app.
-    exec: String,
+    pub(crate) exec: String,
     /// Score of the app of the ranking algo.
     score: f32,
     /// Uuid used to uniquely identify this app.
@@ -63,17 +63,20 @@ pub struct App {
     /// Icon name for this app.
     /// The icon name has to be looked up in the system's icon theme to get a file path.
     pub icon: String,
+    /// If true, launch in terminal
+    pub(crate) terminal: bool,
 }
 
 impl App {
     /// Create a new app.
-    pub fn new(name: String, icon: String, exec: String) -> App {
+    pub fn new(name: String, icon: String, exec: String, terminal: bool) -> App {
         App {
             name,
             icon,
             exec,
             uuid: Uuid::new_v4().to_string(),
             score: 0.0,
+            terminal,
         }
     }
 

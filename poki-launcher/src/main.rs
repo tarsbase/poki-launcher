@@ -21,7 +21,7 @@ use crate::ui::{DB_PATH, SHOW_ON_START};
 use cpp::*;
 use env_logger::Env;
 use human_panic::setup_panic;
-use lib_poki_launcher::prelude::AppsDB;
+use lib_poki_launcher::prelude::*;
 use poki_launcher_notifier as notifier;
 use qmetaobject::*;
 use std::os::raw::c_void;
@@ -69,6 +69,7 @@ fn main() {
     }
 }
 
+// Include stuff for later cpp
 cpp! {{
 #include "src/icon.cpp"
 #include <QtCore/QLatin1String>
@@ -77,28 +78,20 @@ cpp! {{
 fn start_ui() {
     let env = Env::new().filter("POKI_LOGGER");
     env_logger::init_from_env(env);
-    let apps = if DB_PATH.exists() {
-        AppsDB::load(&*DB_PATH).unwrap()
-    } else {
-        ui::CONF.with(|conf| {
-            let (apps, errors) = AppsDB::from_desktop_entries(&conf.app_paths);
-            ui::log_errs(&errors);
-            apps.save(&*DB_PATH).unwrap();
-            apps
-        })
-    };
-    let mut lock = ui::APPS.lock().unwrap();
-    *lock = Some(apps);
-    drop(lock);
+    lazy_static::initialize(&ui::APPS);
+    // Install my logger into QT
     install_message_handler(logger);
+    // Init ui res
     ui::init_ui();
     let mut engine = QmlEngine::new();
     engine.load_file("qrc:/ui/main.qml".into());
+    // Icon provider hack
     let provider = cpp!(unsafe [] -> *mut c_void as "IconProvider*" { return new IconProvider(); });
     engine.add_image_provider("icon".into(), provider);
     engine.exec();
 }
 
+/// Make QT use my logger
 extern "C" fn logger(msg_type: QtMsgType, context: &QMessageLogContext, msg: &QString) {
     use log::{log, Level};
     let level = match msg_type {

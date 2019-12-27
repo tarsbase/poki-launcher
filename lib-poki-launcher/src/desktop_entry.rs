@@ -135,7 +135,14 @@ pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<App>, Error> 
             file: path_str.clone(),
         })?
         .clone();
-    Ok(Some(App::new(name, icon, exec)))
+    let terminal = {
+        if let Some(value) = entry.get("Terminal") {
+            value.parse()?
+        } else {
+            false
+        }
+    };
+    Ok(Some(App::new(name, icon, exec, terminal)))
 }
 
 #[cfg(test)]
@@ -183,6 +190,7 @@ mod test {
                 "Test".to_owned(),
                 "testicon".to_owned(),
                 "/usr/bin/test --with-flag".to_owned(),
+                false,
             );
             // Note, apps will have different uuids but Eq doesn't consider them
             assert_eq!(app, other_app);

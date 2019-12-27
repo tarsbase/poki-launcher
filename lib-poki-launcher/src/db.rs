@@ -14,10 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 use log::*;
 use std::cmp::Ordering;
 
 use super::App;
+use crate::config::Config;
 use failure::{Error, Fail};
 use file_lock::FileLock;
 use fuzzy_matcher::skim::fuzzy_match;
@@ -38,17 +40,21 @@ pub struct AppsDB {
     reference_time: f64,
     /// The half life of the app launches
     half_life: f32,
+    // App config
+    #[serde(skip_serializing, skip_deserializing)]
+    pub config: Config,
 }
 
 #[allow(dead_code)]
 impl AppsDB {
     /// Create a new app.
-    pub fn new(apps: Vec<App>) -> Self {
+    pub fn new(config: Config, apps: Vec<App>) -> Self {
         AppsDB {
             apps,
             reference_time: current_time_secs(),
             // Half life of 3 days
             half_life: 60.0 * 60.0 * 24.0 * 3.0,
+            config,
         }
     }
 
@@ -57,16 +63,18 @@ impl AppsDB {
     /// # Arguments
     ///
     /// * `path` - Location of the database file
-    pub fn load(path: impl AsRef<Path>) -> Result<AppsDB, Error> {
+    pub fn load(path: impl AsRef<Path>, config: Config) -> Result<AppsDB, Error> {
         let path = path.as_ref().display().to_string();
         let lock = FileLock::lock(&path, true, false).map_err(|e| AppDBError::FileOpen {
             file: path.to_owned(),
             err: e.into(),
         })?;
-        Ok(rmp::from_read(&lock.file).map_err(|e| AppDBError::ParseDB {
+        let mut apps: AppsDB = rmp::from_read(&lock.file).map_err(|e| AppDBError::ParseDB {
             file: path.to_owned(),
             err: e.into(),
-        })?)
+        })?;
+        apps.config = config;
+        Ok(apps)
     }
 
     /// Save database file.
@@ -231,14 +239,16 @@ mod tests {
                 "Test1".to_owned(),
                 "icon".to_owned(),
                 "/bin/test".to_owned(),
+                false,
             ),
             App::new(
                 "Test2".to_owned(),
                 "icon".to_owned(),
                 "/bin/test".to_owned(),
+                false,
             ),
         ];
-        let mut apps_db = AppsDB::new(apps.clone());
+        let mut apps_db = AppsDB::new(Config::default(), apps.clone());
         apps_db.merge_new_entries(apps.clone());
         assert_eq!(apps, apps_db.apps);
     }
@@ -250,14 +260,16 @@ mod tests {
                 "Test1".to_owned(),
                 "icon".to_owned(),
                 "/bin/test".to_owned(),
+                false,
             ),
             App::new(
                 "Test2".to_owned(),
                 "icon".to_owned(),
                 "/bin/test".to_owned(),
+                false,
             ),
         ];
-        let mut apps_db = AppsDB::new(apps.clone());
+        let mut apps_db = AppsDB::new(Config::default(), apps.clone());
         apps.remove(0);
         apps_db.merge_new_entries(apps.clone());
         assert_eq!(apps, apps_db.apps);
@@ -269,12 +281,14 @@ mod tests {
             "Test1".to_owned(),
             "icon".to_owned(),
             "/bin/test".to_owned(),
+            false,
         )];
-        let mut apps_db = AppsDB::new(apps.clone());
+        let mut apps_db = AppsDB::new(Config::default(), apps.clone());
         apps.push(App::new(
             "Test2".to_owned(),
             "icon".to_owned(),
             "/bin/test".to_owned(),
+            false,
         ));
         apps_db.merge_new_entries(apps.clone());
         assert_eq!(apps, apps_db.apps);

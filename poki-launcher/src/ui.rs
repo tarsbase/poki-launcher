@@ -18,7 +18,7 @@ use cstr::*;
 use failure::Error;
 use lazy_static::lazy_static;
 use lib_poki_launcher::prelude::*;
-use log::{error, trace};
+use log::{debug, error, trace};
 use poki_launcher_notifier::{self as notifier, Notifier};
 use poki_launcher_x11::foreground;
 use qmetaobject::*;
@@ -49,11 +49,22 @@ lazy_static! {
         db_file.push("apps.db");
         db_file
     };
-    pub static ref APPS: Arc<Mutex<Option<AppsDB>>> = Arc::new(Mutex::new(None));
+    pub static ref APPS: Arc<Mutex<AppsDB>> = {
+        let config = Config::load().unwrap();
+        let apps = if DB_PATH.exists() {
+            debug!("Loading db from: {}", DB_PATH.display());
+            AppsDB::load(&*DB_PATH, config).expect("Failed to load database file")
+        } else {
+            let (apps, errors) = AppsDB::from_desktop_entries(config);
+            log_errs(&errors);
+            apps.save(&*DB_PATH).unwrap();
+            apps
+        };
+        Arc::new(Mutex::new(apps))
+    };
 }
 
 thread_local! {
-    pub static CONF: Config = Config::load().unwrap();
     pub static SHOW_ON_START: Cell<bool> = Cell::new(true);
 }
 
@@ -118,10 +129,9 @@ impl PokiLauncher {
     }
 
     fn search(&mut self, text: String) {
-        let lock = APPS.lock().expect("Apps Mutex Poisoned");
-        self.list = lock
-            .as_ref()
-            .unwrap()
+        self.list = APPS
+            .lock()
+            .expect("Apps Mutex Poisoned")
             .get_ranked_list(&text, Some(MAX_APPS_SHOWN));
         if !self.list.iter().any(|app| app.uuid == self.get_selected()) {
             if !self.list.is_empty() {
@@ -139,7 +149,6 @@ impl PokiLauncher {
         trace!("Scanning...");
         self.scanning = true;
         self.scanning_changed();
-        let config = CONF.with(|c| c.clone());
         let qptr = QPointer::from(&*self);
         let done = qmetaobject::queued_callback(move |()| {
             qptr.as_pinned().map(|self_| {
@@ -148,16 +157,11 @@ impl PokiLauncher {
             });
         });
         thread::spawn(move || {
-            let (app_list, errors) = scan_desktop_entries(&config.app_paths);
-            let mut lock = APPS.lock().expect("Apps Mutex Poisoned");
-            match *lock {
-                Some(ref mut apps) => {
-                    apps.merge_new_entries(app_list);
-                    if let Err(e) = apps.save(&*DB_PATH) {
-                        error!("Saving database failed: {}", e);
-                    }
-                }
-                None => panic!("APPS Not init"),
+            let mut apps = APPS.lock().expect("Apps Mutex Poisoned");
+            let (app_list, errors) = scan_desktop_entries(&apps.config.app_paths);
+            apps.merge_new_entries(app_list);
+            if let Err(e) = apps.save(&*DB_PATH) {
+                error!("Saving database failed: {}", e);
             }
             log_errs(&errors);
             done(());
@@ -211,17 +215,12 @@ impl PokiLauncher {
             .iter()
             .find(|app| app.uuid == self.get_selected())
             .unwrap();
-        if let Err(err) = app.run() {
+        let mut apps = APPS.lock().expect("Apps Mutex Poisoned");
+        if let Err(err) = app.run(&apps.config) {
             error!("{}", err);
         }
-        let mut lock = APPS.lock().expect("Apps Mutex Poisoned");
-        match *lock {
-            Some(ref mut apps) => {
-                apps.update(app);
-                apps.save(&*DB_PATH).unwrap();
-            }
-            None => panic!("APPS Not init"),
-        }
+        apps.update(app);
+        apps.save(&*DB_PATH).unwrap();
         self.list.clear();
         self.model.borrow_mut().reset_data(Default::default());
         self.set_selected(QString::default());

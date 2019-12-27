@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
+use crate::config::Config;
 use failure::{Error, Fail};
 use log::debug;
 use nix::unistd::{getpid, setpgid};
@@ -33,18 +34,34 @@ pub struct RunError {
     err: Error,
 }
 
-fn parse_exec<'a>(exec: &'a str) -> (&'a str, Vec<&'a str>) {
+fn parse_exec<'a>(exec: &'a str) -> (String, Vec<&'a str>) {
     let mut iter = exec.split(' ');
-    let cmd = iter.next().expect("Empty Exec");
+    let cmd = iter.next().expect("Empty Exec").to_owned();
     let args = iter.collect();
     (cmd, args)
 }
 
+fn with_term<'a>(config: &Config, exec: &'a str) -> Result<(String, Vec<&'a str>), Error> {
+    let term = if let Some(term) = &config.term_cmd {
+        term.clone()
+    } else {
+        std::env::var("TERM")?
+    };
+    let mut args: Vec<&str> = exec.split(' ').collect();
+    args.insert(0, "-e");
+    Ok((term, args))
+}
+
 impl App {
     /// Run the app.
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run(&self, config: &Config) -> Result<(), Error> {
         debug!("Exec: `{}`", self.exec);
-        let (cmd, args) = parse_exec(&self.exec);
+        let (cmd, args) = if self.terminal {
+            with_term(&config, &self.exec)?
+        } else {
+            parse_exec(&self.exec)
+        };
+        debug!("Running `{} {}`", cmd, args.join(" "));
         let mut command = Command::new(&cmd);
         command
             .args(&args)
@@ -62,7 +79,7 @@ impl App {
             exec: self.exec.clone(),
             err: e.into(),
         })?;
-        foreground(cmd);
+        foreground(&cmd);
         Ok(())
     }
 }
