@@ -15,7 +15,6 @@
 # along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-cargo vendor
-tar -cvf vendor.tar vendor/*
+cargo vendor > config
+tar -cvJf vendor.tar.xz vendor
 rm -r vendor
-xz vendor.tar
