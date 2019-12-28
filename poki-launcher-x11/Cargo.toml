@@ -23,7 +23,7 @@ description = "A library for poki-launcher to do X11 stuff"
 homepage = "https://github.com/zethra/poki-launcher"
 repository = "https://github.com/zethra/poki-launcher"
 keywords =[]
-license = "GPL-3.0-only"
+license = "GPL-3.0-or-later"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

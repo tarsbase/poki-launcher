@@ -23,7 +23,7 @@ description = "The gui framework library backing poki-launcher"
 homepage = "https://github.com/zethra/poki-launcher"
 repository = "https://github.com/zethra/poki-launcher"
 keywords =["launcher"]
-license = "GPL-3.0-only"
+license = "GPL-3.0-or-later"
 edition = "2018"
 
 [dependencies]
