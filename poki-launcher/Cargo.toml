@@ -28,7 +28,7 @@ edition = "2018"
 
 [dependencies]
 libc = "0.2"
-nix = "0.15"
+nix = "0.16"
 lib-poki-launcher = { version = "0.1.0", path = "../lib-poki-launcher" }
 poki-launcher-notifier = { version = "0.1.0", path = "../poki-launcher-notifier" }
 poki-launcher-x11 = { version = "0.1.0", path = "../poki-launcher-x11" }
