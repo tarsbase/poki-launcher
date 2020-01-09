@@ -33,7 +33,7 @@ struct Opt {
     /// Dump the apps database to stdout as json and exit
     #[structopt(long)]
     dump_db: bool,
-    /// Start the daemon without showing the launcher window
+    /// Start the daemon without showing the launcher window or exit if daemon is already running
     #[structopt(long)]
     no_show: bool,
 }
@@ -59,13 +59,15 @@ fn main() {
             eprintln!("Database file doesn't exit");
             std::process::exit(1);
         }
-    } else if notifier::is_running() {
-        if let Err(e) = notifier::notify() {
-            eprintln!("{}", e);
+    } else if !opt.no_show {
+        if notifier::is_running() {
+            if let Err(e) = notifier::notify() {
+                eprintln!("{}", e);
+                start_ui();
+            }
+        } else {
             start_ui();
         }
-    } else {
-        start_ui();
     }
 }
 
