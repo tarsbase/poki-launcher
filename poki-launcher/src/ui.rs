@@ -172,6 +172,7 @@ impl PokiLauncher {
                 }
             }
         });
+        self.scan();
     }
 
     fn set_selected<T: Into<QString>>(&mut self, selected: T) {
