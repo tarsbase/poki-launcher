@@ -3,7 +3,7 @@
 **Work in progress**
 
 Poki Launcher is an application launcher for Linux.  It tracks app usage then ranks apps based on frecency and fuzzy search.
-It's written in Rust and QML.
+It's written in Rust and QML.  I mostly made this for myself but if anyone else finds some use for it that'd be great.
 
 ![Launcher Image](./media/launcher.png)
 
@@ -12,6 +12,13 @@ It's written in Rust and QML.
 ## OpenSUSE & Fedora
 
 Get package from OBS: https://software.opensuse.org//download.html?project=home%3Azethra&package=poki-launcher
+
+### Features
+
+- Sorts apps by how recently and how frequently you use them producing good results with minimal input
+- Using the same fuzzy search algorithm an fzf to sort apps
+- Automatically detects new apps
+- i3/tiling wm compatible
 
 
 ## From Source
@@ -60,3 +67,7 @@ uncomment the lines for those in the example config file.
 If you have any issues with the app or a question send me and email
 detailing the issue at [benaagoldberg@gmail.com](mailto:benaagoldberg@gmail.com) with "POKI LAUNCHER ISSUE"
 in the subject line or create an issue on my github page.
+
+
+# Planned Features
+- Color scheme changes
