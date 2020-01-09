@@ -1,5 +1,6 @@
 {
     # Locations to search apps
+    # Will use "/usr/share/applications/" is not set
     app_paths: [
         # System apps
         "/usr/share/applications/"
@@ -10,6 +11,7 @@
         # Flatpak apps
         // /var/lib/flatpak/exports/share/applications
     ]
-    # Set a custom icon theme
-    // icon_theme: "Papirus"
+    # Set the command used to open terminal apps
+    # Will use `$TERM -e` by default
+    // term_cmd: "xterm -e"
 }
