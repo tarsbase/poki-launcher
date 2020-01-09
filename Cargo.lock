@@ -482,7 +482,7 @@ dependencies = [
 
 [[package]]
 name = "lib-poki-launcher"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "config 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "directories 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -691,7 +691,7 @@ dependencies = [
 
 [[package]]
 name = "poki-launcher"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "cpp 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "cpp_build 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -700,7 +700,7 @@ dependencies = [
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "human-panic 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib-poki-launcher 0.1.0",
+ "lib-poki-launcher 0.2.0",
  "libc 0.2.62 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nix 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",

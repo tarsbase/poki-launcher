@@ -17,7 +17,7 @@
 
 [package]
 name = "poki-launcher"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Ben Aaron <benaagoldberg@gmail.com>"]
 description = "An application launcher for Linux"
 homepage = "https://github.com/zethra/poki-launcher"
@@ -29,7 +29,7 @@ edition = "2018"
 [dependencies]
 libc = "0.2"
 nix = "0.16"
-lib-poki-launcher = { version = "0.1.0", path = "../lib-poki-launcher" }
+lib-poki-launcher = { version = "0.2.0", path = "../lib-poki-launcher" }
 poki-launcher-notifier = { version = "0.1.0", path = "../poki-launcher-notifier" }
 poki-launcher-x11 = { version = "0.1.0", path = "../poki-launcher-x11" }
 structopt = "0.3"
