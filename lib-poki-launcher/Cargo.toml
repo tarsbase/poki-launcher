@@ -31,16 +31,16 @@ failure = "0.1"
 log = "0.4"
 serde = "1.0"
 serde_derive = "1.0"
-rust-ini = "0.13"
+rust-ini = "0.14"
 rmp-serde = "0.14.0"
-fuzzy-matcher = "0.2"
-uuid = { version = "0.7", features = ["serde", "v4"]}
-config = "0.9"
+fuzzy-matcher = "0.3"
+uuid = { version = "0.7", features = ["serde", "v4"] }
+config = { version = "0.10", default-features = false, features = ["hjson"] }
 directories = "2.0"
 lazy_static = "1.4"
 poki-launcher-x11 = { version = "0.1.0", path = "../poki-launcher-x11" }
-nix = "0.15"
-shellexpand = "1.0"
+nix = "0.16"
+shellexpand = "1.1"
 itertools = "0.8"
 walkdir = "2.2"
 file-lock = "1.1"

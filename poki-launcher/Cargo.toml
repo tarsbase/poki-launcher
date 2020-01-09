@@ -44,7 +44,7 @@ qmetaobject = { git = "https://github.com/zethra/qmetaobject-rs.git", rev = "8bd
 cstr = "0.1"
 cpp = "0.5"
 notify = "4.0"
-shellexpand = "1.0"
+shellexpand = "1.1"
 
 [build-dependencies]
 cpp_build = "0.5"
