@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
+use anyhow::Error;
 use cstr::*;
-use failure::Error;
 use lazy_static::lazy_static;
 use lib_poki_launcher::prelude::*;
 use log::{debug, error, trace};

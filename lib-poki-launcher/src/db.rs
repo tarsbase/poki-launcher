@@ -20,7 +20,7 @@ use std::cmp::Ordering;
 
 use super::App;
 use crate::config::Config;
-use failure::{Error, Fail};
+use anyhow::Error;
 use file_lock::FileLock;
 use fuzzy_matcher::skim::fuzzy_match;
 use rmp_serde as rmp;
@@ -30,6 +30,7 @@ use std::io::Write as _;
 use std::path::Path;
 use std::process;
 use std::time::SystemTime;
+use thiserror::Error;
 
 /// An apps database.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -216,15 +217,15 @@ pub fn current_time_secs() -> f64 {
     }
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 pub enum AppDBError {
-    #[fail(display = "Failed to open apps database file {}: {}", file, err)]
+    #[error("Failed to open apps database file {file}: {err}")]
     FileOpen { file: String, err: Error },
-    #[fail(display = "Failed to create apps database file {}: {}", file, err)]
+    #[error("Failed to create apps database file {file}: {err}")]
     FileCreate { file: String, err: Error },
-    #[fail(display = "Failed to write to apps database file {}: {}", file, err)]
+    #[error("Failed to write to apps database file {file}: {err}")]
     FileWrite { file: String, err: Error },
-    #[fail(display = "Couldn't parse apps database file {}: {}", file, err)]
+    #[error("Couldn't parse apps database file {file}: {err}")]
     ParseDB { file: String, err: Error },
 }
 

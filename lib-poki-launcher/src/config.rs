@@ -15,7 +15,7 @@
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::DIRS;
-use failure::Error;
+use anyhow::Error;
 use serde_derive::{Deserialize, Serialize};
 use std::default::Default;
 use std::fs::create_dir;

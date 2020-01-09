@@ -15,33 +15,31 @@
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
 use super::App;
-use failure::{Error, Fail};
+use anyhow::Error;
 use ini::Ini;
 use itertools::Itertools as _;
 use std::path::Path;
+use thiserror::Error;
 
 /// Error from paring a desktop entry
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 pub enum EntryParseError {
     /// Desktop file is missing the 'Desktop Entry' section.
-    #[fail(display = "Desktop file {} is missing 'Desktop Entry' section", file)]
+    #[error("Desktop file {file} is missing 'Desktop Entry' section")]
     MissingSection { file: String },
     /// Desktop file is missing the 'Name' parameter.
-    #[fail(display = "Desktop file {} is missing the 'Name' parameter", file)]
+    #[error("Desktop file {file} is missing the 'Name' parameter")]
     MissingName { file: String },
     /// Desktop file is missing the 'Exec' parameter.
-    #[fail(display = "Desktop file {} is missing the 'Exec' parameter", file)]
+    #[error("Desktop file {file} is missing the 'Exec' parameter")]
     MissingExec { file: String },
     /// Desktop file is missing the 'Icon' parameter.
-    #[fail(display = "Desktop file {} is missing the 'Icon' parameter", file)]
+    #[error("Desktop file {file} is missing the 'Icon' parameter")]
     MissingIcon { file: String },
     /// Failed to parse deskop file.
-    #[fail(display = "Failed to parse desktop file {}: {}", file, err)]
+    #[error("Failed to parse desktop file {file}: {err}")]
     InvalidIni { file: String, err: Error },
-    #[fail(
-        display = "In entry {} property {} has an invalid value {}",
-        file, name, value
-    )]
+    #[error("In entry {file} property {name} has an invalid value {value}")]
     /// A property had an invalid value.
     /// This is returned if NoDisplay or Hidden are set ti a value that isn't
     /// `true` or `false`.

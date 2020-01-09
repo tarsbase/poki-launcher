@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
-use failure::Error;
+use anyhow::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;

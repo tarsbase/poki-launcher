@@ -18,24 +18,22 @@ use crate::config::Config;
 use crate::db::AppsDB;
 use crate::desktop_entry::{parse_desktop_file, EntryParseError};
 use crate::App;
-use failure::{Error, Fail};
+use anyhow::Error;
 use std::path::PathBuf;
+use thiserror::Error;
 use walkdir::WalkDir;
 
 /// An error from scanning for desktop entries.
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 pub enum ScanError {
     /// Failed to scan the directory for some reason (ex. it doesn't exist).
-    #[fail(
-        display = "Failed to scan directory {} for desktop entries: {}",
-        dir, err
-    )]
+    #[error("Failed to scan directory {dir} for desktop entries: {err}")]
     ScanDirectory { dir: String, err: Error },
     /// Paring the entry failed.
-    #[fail(display = "Parse error: {}", err)]
+    #[error("Parse error: {err}")]
     ParseEntry { err: EntryParseError },
     /// Path expansion failed.
-    #[fail(display = "Failed to expand path {}: {}", path, err)]
+    #[error("Failed to expand path {path}: {err}")]
     PathExpand { path: String, err: Error },
 }
 

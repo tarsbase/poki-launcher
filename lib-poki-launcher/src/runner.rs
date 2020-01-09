@@ -15,18 +15,19 @@
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::config::Config;
-use failure::{Error, Fail};
+use anyhow::Error;
 use log::debug;
 use nix::unistd::{getpid, setpgid};
 use poki_launcher_x11::foreground;
 use std::os::unix::process::CommandExt as _;
 use std::process::{Command, Stdio};
+use thiserror::Error;
 
 use super::App;
 
 /// An error from running the app.
-#[derive(Debug, Fail)]
-#[fail(display = "Execution failed with Exec line {}: {}", exec, err)]
+#[derive(Debug, Error)]
+#[error("Execution failed with Exec line {exec}: {err}")]
 pub struct RunError {
     /// The exec string from the app
     exec: String,
