@@ -79,6 +79,7 @@ struct PokiLauncher {
     selected: qt_property!(QString; NOTIFY selected_changed WRITE set_selected),
     visible: qt_property!(bool; NOTIFY visible_changed),
     scanning: qt_property!(bool; NOTIFY scanning_changed),
+    has_moved: qt_property!(bool),
 
     init: qt_method!(fn(&mut self)),
     search: qt_method!(fn(&mut self, text: String)),
@@ -176,7 +177,7 @@ impl PokiLauncher {
             .lock()
             .expect("Apps Mutex Poisoned")
             .get_ranked_list(&text, Some(MAX_APPS_SHOWN));
-        if !self.list.iter().any(|app| app.uuid == self.get_selected()) {
+        if !self.has_moved || !self.list.iter().any(|app| app.uuid == self.get_selected()) {
             if !self.list.is_empty() {
                 self.set_selected(self.list[0].uuid.clone());
             } else {
@@ -217,6 +218,7 @@ impl PokiLauncher {
         if self.list.is_empty() {
             return;
         }
+        self.has_moved = true;
         let (idx, _) = self
             .list
             .iter()
@@ -235,6 +237,7 @@ impl PokiLauncher {
         if self.list.is_empty() {
             return;
         }
+        self.has_moved = true;
         let (idx, _) = self
             .list
             .iter()
@@ -253,6 +256,7 @@ impl PokiLauncher {
         if self.list.is_empty() {
             return;
         }
+        self.has_moved = false;
         let app = self
             .list
             .iter()
@@ -271,6 +275,7 @@ impl PokiLauncher {
 
     fn hide(&mut self) {
         trace!("Hide");
+        self.has_moved = false;
         self.visible = false;
         self.visible_changed();
     }
