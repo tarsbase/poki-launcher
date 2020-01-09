@@ -23,3 +23,10 @@ members = [
 	"poki-launcher-notifier",
 	"poki-launcher-x11",
 ]
+
+
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
