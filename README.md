@@ -14,7 +14,7 @@ It's written in Rust and QML.
 Get package from OBS: https://software.opensuse.org//download.html?project=home%3Azethra&package=poki-launcher
 
 
-## From source
+## From Source
 
 Install the Qt5 base and declarative development packages for your distro.
 Ex.
@@ -35,7 +35,7 @@ at `/usr/share/doc/packages/poki-launcher/poki-launcher.hjson` if installed
 from the package other grab it from `https://raw.githubusercontent.com/zethra/poki-launcher/master/poki-launcher.hjson`.
 Copy this file to `~/.config/poki-launcher/poki-launcher.hjson`.
 
-## Config options
+## Config Options
 
 - `app_paths`
 
@@ -46,7 +46,7 @@ A list of paths to search for desktop files in.  Defaults to just `/usr/share/ap
 Override the command used to launch terminal apps.  Defaults to `$TERM -e`
 
 
-# Trouble shotting
+# Trouble Shotting
 
 **Q** An app isn't in the list
 
