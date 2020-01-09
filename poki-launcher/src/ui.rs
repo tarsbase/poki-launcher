@@ -62,7 +62,13 @@ lazy_static! {
         };
         let apps = if DB_PATH.exists() {
             debug!("Loading db from: {}", DB_PATH.display());
-            AppsDB::load(&*DB_PATH, config).expect("Failed to load database file")
+            match AppsDB::load(&*DB_PATH, config) {
+                Ok(apps) => apps,
+                Err(e) => {
+                    error!("Failed to load database file: {}", e);
+                    std::process::exit(3);
+                }
+            }
         } else {
             let (apps, errors) = AppsDB::from_desktop_entries(config);
             log_errs(&errors);

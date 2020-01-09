@@ -39,12 +39,12 @@ struct Opt {
 }
 
 fn main() {
-    // setup_panic!(Metadata {
-    //     name: env!("CARGO_PKG_NAME").into(),
-    //     version: env!("CARGO_PKG_VERSION").into(),
-    //     authors: "Ben Goldberg <benaagoldberg@gmail.com>".into(),
-    //     homepage: "https://github.com/zethra/poki-launcher".into(),
-    // });
+    setup_panic!(Metadata {
+        name: env!("CARGO_PKG_NAME").into(),
+        version: env!("CARGO_PKG_VERSION").into(),
+        authors: "Ben Goldberg <benaagoldberg@gmail.com>".into(),
+        homepage: "https://github.com/zethra/poki-launcher".into(),
+    });
 
     let opt = Opt::from_args();
     SHOW_ON_START.with(|b| b.set(!opt.no_show));
