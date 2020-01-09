@@ -25,8 +25,7 @@ use std::fs::create_dir;
 pub struct Config {
     /// The list of directories to search for desktop entries in.
     pub app_paths: Vec<String>,
-    /// Name of the icon theme to pull icons from.
-    pub icon_theme: Option<String>,
+    /// Command to use to run terminal apps
     pub term_cmd: Option<String>,
 }
 
@@ -34,7 +33,6 @@ impl Default for Config {
     fn default() -> Self {
         Config {
             app_paths: vec!["/usr/share/applications".to_owned()],
-            icon_theme: None,
             term_cmd: None,
         }
     }
