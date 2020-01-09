@@ -127,12 +127,10 @@ pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<App>, Error> 
         })?
         .clone();
     let exec = strip_entry_args(&exec);
-    let icon = entry
-        .get("Icon")
-        .ok_or(EntryParseError::MissingIcon {
-            file: path_str.clone(),
-        })?
-        .clone();
+    let icon = match entry.get("Icon") {
+        Some(icon) => icon.clone(),
+        None => String::new(),
+    };
     let terminal = {
         if let Some(value) = entry.get("Terminal") {
             value.parse()?
