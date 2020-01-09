@@ -18,7 +18,7 @@ use anyhow::Error;
 use cstr::*;
 use lazy_static::lazy_static;
 use lib_poki_launcher::prelude::*;
-use log::{debug, error, trace};
+use log::{debug, error, trace, warn};
 use notify::{watcher, RecursiveMode, Watcher};
 use poki_launcher_notifier::{self as notifier, Notifier};
 use poki_launcher_x11::foreground;
@@ -72,7 +72,10 @@ lazy_static! {
         } else {
             let (apps, errors) = AppsDB::from_desktop_entries(config);
             log_errs(&errors);
-            apps.save(&*DB_PATH).unwrap();
+            // TODO visual error indicator
+            if let Err(e) = apps.save(&*DB_PATH) {
+                error!("Failed to save apps database to disk: {}", e);
+            }
             apps
         };
         Arc::new(Mutex::new(apps))
@@ -110,10 +113,18 @@ struct PokiLauncher {
 
 impl PokiLauncher {
     fn init(&mut self) {
+        self.scan();
+
         // Setup signal notifier and callback
         self.visible = SHOW_ON_START.with(|b| b.get());
         self.visible_changed();
-        let rx = Notifier::start().unwrap();
+        let rx = match Notifier::start() {
+            Ok(rx) => rx,
+            Err(e) => {
+                error!("Failed to start signal notifier: {}", e);
+                std::process::exit(5);
+            }
+        };
         let qptr = QPointer::from(&*self);
         let show = qmetaobject::queued_callback(move |()| {
             qptr.as_pinned().map(|self_| {
@@ -123,14 +134,19 @@ impl PokiLauncher {
         });
         thread::spawn(move || loop {
             use notifier::Msg;
-            match rx.recv().unwrap() {
-                Msg::Show => {
-                    show(());
-                    foreground("Poki Launcher");
-                }
-                Msg::Exit => {
-                    drop(rx);
-                    std::process::exit(0);
+            match rx.recv() {
+                Ok(msg) => match msg {
+                    Msg::Show => {
+                        show(());
+                        foreground("Poki Launcher");
+                    }
+                    Msg::Exit => {
+                        drop(rx);
+                        std::process::exit(0);
+                    }
+                },
+                Err(e) => {
+                    warn!("Signal notifier notifier error: {}", e);
                 }
             }
         });
@@ -144,7 +160,13 @@ impl PokiLauncher {
         });
         thread::spawn(move || {
             let (tx, rx) = mpsc::channel();
-            let mut watcher = watcher(tx, Duration::from_secs(10)).unwrap();
+            let mut watcher = match watcher(tx, Duration::from_secs(10)) {
+                Ok(watcher) => watcher,
+                Err(e) => {
+                    error!("Error creating file system watcher: {}", e);
+                    return;
+                }
+            };
 
             for path in &APPS.lock().expect("Apps Mutex Poisoned").config.app_paths {
                 let expanded = match shellexpand::full(&path) {
@@ -156,7 +178,9 @@ impl PokiLauncher {
                 };
                 let path = Path::new(&expanded);
                 if path.exists() {
-                    watcher.watch(path, RecursiveMode::Recursive).unwrap();
+                    if let Err(e) = watcher.watch(path, RecursiveMode::Recursive) {
+                        warn!("Failed to set watcher for dir {}: {}", expanded, e);
+                    }
                 }
             }
             loop {
@@ -172,7 +196,6 @@ impl PokiLauncher {
                 }
             }
         });
-        self.scan();
     }
 
     fn set_selected<T: Into<QString>>(&mut self, selected: T) {
@@ -279,7 +302,9 @@ impl PokiLauncher {
             error!("{}", err);
         }
         apps.update(app);
-        apps.save(&*DB_PATH).unwrap();
+        if let Err(e) = apps.save(&*DB_PATH) {
+            error!("Failed to save apps database to disk: {}", e);
+        }
         self.list.clear();
         self.model.borrow_mut().reset_data(Default::default());
         self.set_selected(QString::default());
