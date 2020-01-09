@@ -31,7 +31,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use std::fmt;
 use std::path::PathBuf;
-use uuid::prelude::*;
+use uuid::Uuid;
 
 /// Things that you'll probably need in include when using this lib
 pub mod prelude {

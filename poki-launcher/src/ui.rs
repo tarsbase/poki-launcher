@@ -53,7 +53,13 @@ lazy_static! {
         db_file
     };
     pub static ref APPS: Arc<Mutex<AppsDB>> = {
-        let config = Config::load().unwrap();
+        let config = match Config::load() {
+            Ok(config) => config,
+            Err(e) => {
+                error!("Failed to load config file: {}", e);
+                std::process::exit(2);
+            }
+        };
         let apps = if DB_PATH.exists() {
             debug!("Loading db from: {}", DB_PATH.display());
             AppsDB::load(&*DB_PATH, config).expect("Failed to load database file")
