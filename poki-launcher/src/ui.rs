@@ -156,7 +156,6 @@ impl PokiLauncher {
                 };
                 let path = Path::new(&expanded);
                 if path.exists() {
-                    println!("Watching path {:?}", path);
                     watcher.watch(path, RecursiveMode::Recursive).unwrap();
                 }
             }
