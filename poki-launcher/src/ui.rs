@@ -19,14 +19,17 @@ use failure::Error;
 use lazy_static::lazy_static;
 use lib_poki_launcher::prelude::*;
 use log::{debug, error, trace};
+use notify::{watcher, RecursiveMode, Watcher};
 use poki_launcher_notifier::{self as notifier, Notifier};
 use poki_launcher_x11::foreground;
 use qmetaobject::*;
 use std::cell::{Cell, RefCell};
 use std::convert::From;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
 
 const MAX_APPS_SHOWN: usize = 5;
 
@@ -94,6 +97,7 @@ struct PokiLauncher {
 
 impl PokiLauncher {
     fn init(&mut self) {
+        // Setup signal notifier and callback
         self.visible = SHOW_ON_START.with(|b| b.get());
         self.visible_changed();
         let rx = Notifier::start().unwrap();
@@ -114,6 +118,45 @@ impl PokiLauncher {
                 Msg::Exit => {
                     drop(rx);
                     std::process::exit(0);
+                }
+            }
+        });
+
+        // Setup desktop file change notifier and callback
+        let qptr = QPointer::from(&*self);
+        let rescan = qmetaobject::queued_callback(move |()| {
+            qptr.as_pinned().map(|self_| {
+                self_.borrow_mut().scan();
+            });
+        });
+        thread::spawn(move || {
+            let (tx, rx) = mpsc::channel();
+            let mut watcher = watcher(tx, Duration::from_secs(10)).unwrap();
+
+            for path in &APPS.lock().expect("Apps Mutex Poisoned").config.app_paths {
+                let expanded = match shellexpand::full(&path) {
+                    Ok(path) => path.into_owned(),
+                    Err(e) => {
+                        error!("Failed to expand desktop files dir path {}: {:?}", path, e);
+                        continue;
+                    }
+                };
+                let path = Path::new(&expanded);
+                if path.exists() {
+                    println!("Watching path {:?}", path);
+                    watcher.watch(path, RecursiveMode::Recursive).unwrap();
+                }
+            }
+            loop {
+                match rx.recv() {
+                    Ok(event) => {
+                        debug!("Desktop file watcher received {:?}", event);
+                        rescan(());
+                    }
+                    Err(e) => {
+                        debug!("Desktop file watcher error {}", e);
+                        return;
+                    }
                 }
             }
         });
