@@ -1,0 +1,21 @@
+image: alpine/edge
+packages:
+  - qt5-qtbase-dev
+  - qt5-qtdeclarative-dev
+  - rust
+  - cargo
+  - g++
+sources:
+  - https://git.sr.ht/~zethra/poki-launcher
+tasks:
+  - setup: |
+      mkdir bin
+      ln -s /usr/bin/qmake-qt5 bin/qmake
+  - build: |
+      export PATH=$PATH:$HOME/bin
+      cd poki-launcher
+      cargo build
+  - test: |
+      export PATH=$PATH:$HOME/bin
+      cd poki-launcher
+      cargo test
