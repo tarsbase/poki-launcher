@@ -17,8 +17,8 @@
 
 
 Name:           poki-launcher
-Version:        0.2.0
-Release:        2
+Version:        0.3.0
+Release:        1
 Summary:        An application launcher for Linux
 License:        GPL-3.0
 URL:            https://github.com/zethra/poki-launcher
