@@ -57,12 +57,14 @@ cargo build --release
 
 %install
 install -Dm 0755 target/release/%{name} %{buildroot}%{_bindir}/%{name}
+install -Dm 0444 %{name}.hjson %{buildroot}%{_datarootdir}/defaults/%{name}.hjson
 rm -f debugsourcefiles.list
 
 %files
 %license LICENSE
 %doc README.md
-%doc poki-launcher.hjson
 %{_bindir}/%{name}
+%{_datarootdir}/defaults
+%{_datarootdir}/defaults/%{name}.hjson
 
 %changelog
