@@ -33,12 +33,6 @@ use std::time::Duration;
 
 const MAX_APPS_SHOWN: usize = 5;
 
-pub fn log_errs(errs: &[Error]) {
-    for err in errs {
-        error!("{}", err);
-    }
-}
-
 lazy_static! {
     pub static ref DB_PATH: PathBuf = {
         use std::fs::create_dir;
@@ -328,31 +322,6 @@ impl PokiLauncher {
     }
 }
 
-// impl Default for PokiLauncher {
-//     fn default() -> Self {
-//         PokiLauncher {
-//             visible: true,
-//             base: Default::default(),
-//             list: Default::default(),
-//             model: Default::default(),
-//             selected: Default::default(),
-//             init: Default::default(),
-//             scanning: Default::default(),
-//             scanning_changed: Default::default(),
-//             visible_changed: Default::default(),
-//             selected_changed: Default::default(),
-//             search: Default::default(),
-//             down: Default::default(),
-//             up: Default::default(),
-//             scan: Default::default(),
-//             get_icon: Default::default(),
-//             hide: Default::default(),
-//             run: Default::default(),
-//             exit: Default::default(),
-//         }
-//     }
-// }
-
 #[derive(Default, Clone, SimpleListItem)]
 struct QApp {
     pub name: String,
@@ -382,4 +351,10 @@ qrc!(init_qml_resources,
 pub fn init_ui() {
     init_qml_resources();
     qml_register_type::<PokiLauncher>(cstr!("PokiLauncher"), 1, 0, cstr!("PokiLauncher"));
+}
+
+pub fn log_errs(errs: &[Error]) {
+    for err in errs {
+        error!("{}", err);
+    }
 }
