@@ -17,7 +17,7 @@
 
 [package]
 name = "poki-launcher"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Ben Aaron <benaagoldberg@gmail.com>"]
 description = "An application launcher for Linux"
 homepage = "https://github.com/zethra/poki-launcher"
