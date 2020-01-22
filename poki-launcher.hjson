@@ -1,4 +1,16 @@
 {
+    # Poki launcher config file
+
+    # Install config file to `~/.config/poki-launcher/poki-launcher.hjson`
+
+    # This example config file contains all of
+    # the config options of Poki Launcher.
+    # Options are set the their default vaules
+    # unless otherwise sepcified.
+    # Poki Launcher will use these default vaules
+    # for any options are not set or if not config
+    # file is installed
+
     # Locations to search apps
     # Will use "/usr/share/applications/" is not set
     app_paths: [
@@ -7,16 +19,20 @@
         # User apps
         ~/.local/share/applications/
         # Snap apps
-        // "/var/lib/snapd/desktop/applications"
+        "/var/lib/snapd/desktop/applications"
         # Flatpak apps
-        // /var/lib/flatpak/exports/share/applications
+        /var/lib/flatpak/exports/share/applications
     ]
+
     # Set the command used to open terminal apps
     # Will use `$TERM -e` by default
     // term_cmd: "xterm -e"
+
+    # Change the default window size
     window_height: 500
     window_width: 500
 
+    # Change the colors of the UI elements
     background_color: "#282a36"
     border_color: "#2e303b",
     input_box_color: "#44475a",
