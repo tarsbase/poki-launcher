@@ -22,36 +22,42 @@ use std::fs::create_dir;
 
 /// User settings.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Config {
     /// The list of directories to search for desktop entries in.
     pub app_paths: Vec<String>,
     /// Command to use to run terminal apps
     pub term_cmd: Option<String>,
-    pub window_height: Option<i32>,
-    pub window_width: Option<i32>,
-    pub background_color: Option<String>,
-    pub border_color: Option<String>,
-    pub input_box_color: Option<String>,
-    pub input_text_color: Option<String>,
-    pub selected_app_color: Option<String>,
-    pub app_text_color: Option<String>,
-    pub app_separator_color: Option<String>,
+    pub window_height: i32,
+    pub window_width: i32,
+    pub background_color: String,
+    pub border_color: String,
+    pub input_box_color: String,
+    pub input_text_color: String,
+    pub selected_app_color: String,
+    pub app_text_color: String,
+    pub app_separator_color: String,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
-            app_paths: vec!["/usr/share/applications".to_owned()],
+            app_paths: vec![
+                "/usr/share/applications".into(),
+                "~/.local/share/applications/".into(),
+                "/var/lib/snapd/desktop/applications".into(),
+                "/var/lib/flatpak/exports/share/applications".into(),
+            ],
             term_cmd: None,
-            window_height: None,
-            window_width: None,
-            background_color: None,
-            border_color: None,
-            input_box_color: None,
-            input_text_color: None,
-            selected_app_color: None,
-            app_text_color: None,
-            app_separator_color: None,
+            window_height: 500,
+            window_width: 500,
+            background_color: "#282a36".into(),
+            border_color: "#2e303b".into(),
+            input_box_color: "#44475a".into(),
+            input_text_color: "#f8f8f2".into(),
+            selected_app_color: "#44475a".into(),
+            app_text_color: "#f8f8f2".into(),
+            app_separator_color: "#bd93f9".into(),
         }
     }
 }

@@ -129,62 +129,25 @@ impl PokiLauncher {
     fn init(&mut self) {
         self.scan();
 
-        let mut apps = APPS.lock().expect("Mutex poisoned");
-        self.window_height = apps.config.window_height.unwrap_or(500);
+        let apps = APPS.lock().expect("Mutex poisoned");
+        self.window_height = apps.config.window_height;
         self.window_height_changed();
-        self.window_width = apps.config.window_width.unwrap_or(500);
+        self.window_width = apps.config.window_width;
         self.window_width_changed();
 
-        self.background_color = prepend_hash(
-            apps.config
-                .background_color
-                .take()
-                .unwrap_or("#282a36".into()),
-        )
-        .into();
+        self.background_color = prepend_hash(apps.config.background_color.clone()).into();
         self.background_color_changed();
-        self.border_color =
-            prepend_hash(apps.config.border_color.take().unwrap_or("#2e303b".into())).into();
+        self.border_color = prepend_hash(apps.config.border_color.clone()).into();
         self.background_color_changed();
-        self.input_box_color = prepend_hash(
-            apps.config
-                .input_box_color
-                .take()
-                .unwrap_or("#44475a".into()),
-        )
-        .into();
+        self.input_box_color = prepend_hash(apps.config.input_box_color.clone()).into();
         self.input_box_color_changed();
-        self.input_text_color = prepend_hash(
-            apps.config
-                .input_text_color
-                .take()
-                .unwrap_or("#f8f8f2".into()),
-        )
-        .into();
+        self.input_text_color = prepend_hash(apps.config.input_text_color.clone()).into();
         self.input_text_color_changed();
-        self.selected_app_color = prepend_hash(
-            apps.config
-                .selected_app_color
-                .take()
-                .unwrap_or("#44475a".into()),
-        )
-        .into();
+        self.selected_app_color = prepend_hash(apps.config.selected_app_color.clone()).into();
         self.selected_app_color_changed();
-        self.app_text_color = prepend_hash(
-            apps.config
-                .app_text_color
-                .take()
-                .unwrap_or("#f8f8f2".into()),
-        )
-        .into();
+        self.app_text_color = prepend_hash(apps.config.app_text_color.clone()).into();
         self.app_separator_color_changed();
-        self.app_separator_color = prepend_hash(
-            apps.config
-                .app_separator_color
-                .take()
-                .unwrap_or("#bd93f9".into()),
-        )
-        .into();
+        self.app_separator_color = prepend_hash(apps.config.app_separator_color.clone()).into();
         self.app_separator_color_changed();
 
         // Setup signal notifier and callback
