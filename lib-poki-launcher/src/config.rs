@@ -27,6 +27,15 @@ pub struct Config {
     pub app_paths: Vec<String>,
     /// Command to use to run terminal apps
     pub term_cmd: Option<String>,
+    pub window_height: Option<i32>,
+    pub window_width: Option<i32>,
+    pub background_color: Option<String>,
+    pub border_color: Option<String>,
+    pub input_box_color: Option<String>,
+    pub input_text_color: Option<String>,
+    pub selected_app_color: Option<String>,
+    pub app_text_color: Option<String>,
+    pub app_separator_color: Option<String>,
 }
 
 impl Default for Config {
@@ -36,6 +45,13 @@ impl Default for Config {
             term_cmd: None,
             window_height: None,
             window_width: None,
+            background_color: None,
+            border_color: None,
+            input_box_color: None,
+            input_text_color: None,
+            selected_app_color: None,
+            app_text_color: None,
+            app_separator_color: None,
         }
     }
 }

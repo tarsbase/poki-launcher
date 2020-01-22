@@ -19,8 +19,8 @@ import QtQuick.Layouts 1.0
 import QtQuick.Controls 1.1
 
 Rectangle {
-    color: "#282a36"
-	border.color: "#2e303b"
+    color: launcher.background_color
+	border.color: launcher.border_color
 	border.width: 2
 
 	function run() {
@@ -53,7 +53,7 @@ Rectangle {
 
 		Rectangle {
 			id: input_box
-			color: "#44475a"
+			color: launcher.input_box_color
 			radius: 0
 			Layout.preferredWidth: window.width
 			Layout.preferredHeight: window.height * 0.1
@@ -62,7 +62,7 @@ Rectangle {
 			TextInput {
 				id: input
 				focus: true
-				color: "#f8f8f2"
+				color: launcher.input_text_color
 				padding: 10
 				anchors.verticalCenter: input_box.verticalCenter
 				font.pixelSize: window.height * 0.1 * 0.4
@@ -101,7 +101,7 @@ Rectangle {
 					anchors.fill: parent
 					anchors.topMargin: 1
 					anchors.bottomMargin: 1
-					color: (uuid == launcher.selected) ? "#44475a" : "#282a36"
+					color: (uuid == launcher.selected) ? launcher.selected_app_color : launcher.background_color
 					RowLayout {
 						anchors.fill: parent
 
@@ -116,7 +116,7 @@ Rectangle {
 
 						Text {
 							Layout.alignment: Qt.AlignLeft
-							color: "#f8f8f2"
+							color: launcher.app_text_color
 							text: name
 							font.pixelSize: item.height * 0.4
 						}
@@ -125,7 +125,7 @@ Rectangle {
 
 				Rectangle {
 					height: 1
-					color: "#bd93f9"
+					color: launcher.app_separator_color
 					anchors {
 						left: item.left
 						right: item.right
