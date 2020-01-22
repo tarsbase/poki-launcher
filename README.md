@@ -44,13 +44,8 @@ Copy this file to `~/.config/poki-launcher/poki-launcher.hjson`.
 
 ## Config Options
 
-- `app_paths`
-
-A list of paths to search for desktop files in.  Defaults to just `/usr/share/applications/`
-
-- `term_cmd`
-
-Override the command used to launch terminal apps.  Defaults to `$TERM -e`
+The list of config options and their defaults are in the example
+config file [poki-launcher.hjson](./poki-launcher.hjson)
 
 
 # Trouble Shotting
