@@ -62,7 +62,3 @@ uncomment the lines for those in the example config file.
 If you have any issues with the app or a question send me and email
 detailing the issue at [benaagoldberg@gmail.com](mailto:benaagoldberg@gmail.com) with "POKI LAUNCHER ISSUE"
 in the subject line or create an issue on my github page.
-
-
-# Planned Features
-- Color scheme changes
