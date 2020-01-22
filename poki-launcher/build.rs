@@ -22,7 +22,9 @@ fn qmake_query(var: &str) -> String {
             .env("QT_SELECT", "qt5")
             .args(&["-query", var])
             .output()
-            .expect("Failed to execute qmake. Make sure 'qmake' is in your path")
+            .expect(
+                "Failed to execute qmake. Make sure 'qmake' is in your path",
+            )
             .stdout,
     )
     .expect("UTF-8 conversion failed")

@@ -48,9 +48,12 @@ impl Notifier {
         thread::spawn(move || {
             for signal in signals.forever() {
                 match signal {
-                    SIGUSR1 => tx.send(Msg::Show).expect("Failed to send show message"),
+                    SIGUSR1 => {
+                        tx.send(Msg::Show).expect("Failed to send show message")
+                    }
                     SIGINT | SIGTERM | SIGQUIT => {
-                        tx.send(Msg::Exit).expect("Failed to send show message");
+                        tx.send(Msg::Exit)
+                            .expect("Failed to send show message");
                         break;
                     }
                     _ => (),
@@ -68,7 +71,8 @@ impl Notifier {
 impl Drop for Notifier {
     fn drop(&mut self) {
         if is_running() {
-            std::fs::remove_file(&LOCK_FILE_PATH).expect("Failed to delete lock file");
+            std::fs::remove_file(&LOCK_FILE_PATH)
+                .expect("Failed to delete lock file");
         }
     }
 }

@@ -45,7 +45,8 @@ pub mod prelude {
 lazy_static! {
     pub static ref DIRS: ProjectDirs =
         ProjectDirs::from("info", "Ben Goldberg", "Poki-Launcher").unwrap();
-    pub static ref HOME_PATH: PathBuf = BaseDirs::new().unwrap().home_dir().to_owned();
+    pub static ref HOME_PATH: PathBuf =
+        BaseDirs::new().unwrap().home_dir().to_owned();
 }
 
 /// An app on your machine.
@@ -61,7 +62,8 @@ pub struct App {
     /// This is saved to find the app later when the list changes.
     pub uuid: String,
     /// Icon name for this app.
-    /// The icon name has to be looked up in the system's icon theme to get a file path.
+    /// The icon name has to be looked up in the system's icon
+    /// theme to get a file path.
     pub icon: String,
     /// If true, launch in terminal
     pub(crate) terminal: bool,
@@ -69,7 +71,12 @@ pub struct App {
 
 impl App {
     /// Create a new app.
-    pub fn new(name: String, icon: String, exec: String, terminal: bool) -> App {
+    pub fn new(
+        name: String,
+        icon: String,
+        exec: String,
+        terminal: bool,
+    ) -> App {
         App {
             name,
             icon,
@@ -90,7 +97,9 @@ impl App {
 
 impl PartialEq for App {
     fn eq(&self, other: &Self) -> bool {
-        self.name == other.name && self.exec == other.exec && self.icon == other.icon
+        self.name == other.name
+            && self.exec == other.exec
+            && self.icon == other.icon
     }
 }
 

@@ -42,7 +42,10 @@ fn parse_exec<'a>(exec: &'a str) -> (String, Vec<&'a str>) {
     (cmd, args)
 }
 
-fn with_term<'a>(config: &Config, exec: &'a str) -> Result<(String, Vec<&'a str>), Error> {
+fn with_term<'a>(
+    config: &Config,
+    exec: &'a str,
+) -> Result<(String, Vec<&'a str>), Error> {
     let term = if let Some(term) = &config.term_cmd {
         term.clone()
     } else {

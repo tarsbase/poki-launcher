@@ -64,16 +64,22 @@ impl AppsDB {
     /// # Arguments
     ///
     /// * `path` - Location of the database file
-    pub fn load(path: impl AsRef<Path>, config: Config) -> Result<AppsDB, Error> {
+    pub fn load(
+        path: impl AsRef<Path>,
+        config: Config,
+    ) -> Result<AppsDB, Error> {
         let path = path.as_ref().display().to_string();
-        let lock = FileLock::lock(&path, true, false).map_err(|e| AppDBError::FileOpen {
-            file: path.to_owned(),
-            err: e.into(),
+        let lock = FileLock::lock(&path, true, false).map_err(|e| {
+            AppDBError::FileOpen {
+                file: path.to_owned(),
+                err: e.into(),
+            }
         })?;
-        let mut apps: AppsDB = rmp::from_read(&lock.file).map_err(|e| AppDBError::ParseDB {
-            file: path.to_owned(),
-            err: e.into(),
-        })?;
+        let mut apps: AppsDB =
+            rmp::from_read(&lock.file).map_err(|e| AppDBError::ParseDB {
+                file: path.to_owned(),
+                err: e.into(),
+            })?;
         apps.config = config;
         Ok(apps)
     }
@@ -87,9 +93,11 @@ impl AppsDB {
         let path = path.as_ref().display().to_string();
         let buf = rmp::to_vec(&self).expect("Failed to encode apps db");
         if Path::new(&path).exists() {
-            let mut lock = FileLock::lock(&path, true, true).map_err(|e| AppDBError::FileOpen {
-                file: path.to_owned(),
-                err: e.into(),
+            let mut lock = FileLock::lock(&path, true, true).map_err(|e| {
+                AppDBError::FileOpen {
+                    file: path.to_owned(),
+                    err: e.into(),
+                }
             })?;
             lock.file
                 .write_all(&buf)
@@ -98,10 +106,11 @@ impl AppsDB {
                     err: e.into(),
                 })?;
         } else {
-            let mut file = File::create(&path).map_err(|e| AppDBError::FileCreate {
-                file: path.to_owned(),
-                err: e.into(),
-            })?;
+            let mut file =
+                File::create(&path).map_err(|e| AppDBError::FileCreate {
+                    file: path.to_owned(),
+                    err: e.into(),
+                })?;
             file.write_all(&buf).map_err(|e| AppDBError::FileWrite {
                 file: path.to_owned(),
                 err: e.into(),
@@ -114,7 +123,11 @@ impl AppsDB {
     ///
     /// This ranks the apps both by frecency score and fuzzy search.
     // TODO Remove num_items
-    pub fn get_ranked_list(&self, search: &str, num_items: Option<usize>) -> Vec<App> {
+    pub fn get_ranked_list(
+        &self,
+        search: &str,
+        num_items: Option<usize>,
+    ) -> Vec<App> {
         let mut app_list = self
             .apps
             .iter()
@@ -127,7 +140,9 @@ impl AppsDB {
                 _ => None,
             })
             .collect::<Vec<App>>();
-        app_list.sort_by(|left, right| right.score.partial_cmp(&left.score).unwrap());
+        app_list.sort_by(|left, right| {
+            right.score.partial_cmp(&left.score).unwrap()
+        });
         if let Some(n) = num_items {
             app_list = app_list.into_iter().take(n).collect();
         }
@@ -209,7 +224,11 @@ impl App {
 #[allow(dead_code)]
 pub fn current_time_secs() -> f64 {
     match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-        Ok(n) => (u128::from(n.as_secs()) * 1000 + u128::from(n.subsec_millis())) as f64 / 1000.0,
+        Ok(n) => {
+            (u128::from(n.as_secs()) * 1000 + u128::from(n.subsec_millis()))
+                as f64
+                / 1000.0
+        }
         Err(e) => {
             error!("invalid system time: {}", e);
             process::exit(1);

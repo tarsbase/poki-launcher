@@ -58,7 +58,8 @@ pub fn desktop_entires(paths: &[String]) -> (Vec<PathBuf>, Vec<Error>) {
         for entry in WalkDir::new(&*expanded) {
             match entry {
                 Ok(entry) => {
-                    if entry.file_name().to_str().unwrap().contains(".desktop") {
+                    if entry.file_name().to_str().unwrap().contains(".desktop")
+                    {
                         files.push(entry.path().to_owned())
                     }
                 }

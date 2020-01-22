@@ -33,7 +33,8 @@ struct Opt {
     /// Dump the apps database to stdout as json and exit
     #[structopt(long)]
     dump_db: bool,
-    /// Start the daemon without showing the launcher window or exit if daemon is already running
+    /// Start the daemon without showing the launcher window or exit
+    /// if daemon is already running
     #[structopt(long)]
     no_show: bool,
 }
@@ -52,8 +53,10 @@ fn main() {
         use std::fs::File;
 
         if DB_PATH.exists() {
-            let mut file = File::open(&*DB_PATH).expect("Failed to open db file");
-            let data: AppsDB = rmp_serde::from_read(&mut file).expect("Failed to parse db");
+            let mut file =
+                File::open(&*DB_PATH).expect("Failed to open db file");
+            let data: AppsDB =
+                rmp_serde::from_read(&mut file).expect("Failed to parse db");
             println!("{}", serde_json::to_string_pretty(&data).unwrap());
         } else {
             eprintln!("Database file doesn't exit");
@@ -88,13 +91,19 @@ fn start_ui() {
     let mut engine = QmlEngine::new();
     engine.load_file("qrc:/ui/main.qml".into());
     // Icon provider hack
-    let provider = cpp!(unsafe [] -> *mut c_void as "IconProvider*" { return new IconProvider(); });
+    let provider = cpp!(unsafe [] -> *mut c_void as "IconProvider*" {
+        return new IconProvider();
+    });
     engine.add_image_provider("icon".into(), provider);
     engine.exec();
 }
 
 /// Make QT use my logger
-extern "C" fn logger(msg_type: QtMsgType, context: &QMessageLogContext, msg: &QString) {
+extern "C" fn logger(
+    msg_type: QtMsgType,
+    context: &QMessageLogContext,
+    msg: &QString,
+) {
     use log::{log, Level};
     let level = match msg_type {
         QtMsgType::QtCriticalMsg | QtMsgType::QtFatalMsg => Level::Error,

@@ -74,8 +74,8 @@ fn strip_entry_args(exec: &str) -> String {
 ///
 /// # Example
 ///
-/// Parse a list of desktop entries, separating successes from failures, then removing apps
-/// that shouldn't be displayed (None) from the successes.
+/// Parse a list of desktop entries, separating successes from failures,
+/// then removing apps that shouldn't be displayed (None) from the successes.
 /// ```no_run
 /// use lib_poki_launcher::desktop_entry::parse_desktop_file;
 /// use std::path::Path;
@@ -91,26 +91,33 @@ fn strip_entry_args(exec: &str) -> String {
 ///     .filter_map(|x| x)
 ///     .collect();
 /// ```
-pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<App>, Error> {
+pub fn parse_desktop_file(
+    path: impl AsRef<Path>,
+) -> Result<Option<App>, Error> {
     let path_str = path.as_ref().to_string_lossy().into_owned();
     // TODO Finish implementation
-    let file = Ini::load_from_file(path).map_err(|e| EntryParseError::InvalidIni {
-        file: path_str.clone(),
-        err: e.into(),
-    })?;
-    let entry =
-        file.section(Some("Desktop Entry".to_owned()))
-            .ok_or(EntryParseError::MissingSection {
-                file: path_str.clone(),
-            })?;
-    if prop_is_true(entry.get("NoDisplay")).map_err(|_| EntryParseError::InvalidPropVal {
-        file: path_str.clone(),
-        name: "NoDisplay".into(),
-        value: entry.get("NoDisplay").unwrap().clone(),
-    })? || prop_is_true(entry.get("Hidden")).map_err(|_| EntryParseError::InvalidPropVal {
-        file: path_str.clone(),
-        name: "Hidden".into(),
-        value: entry.get("Hidden").unwrap().clone(),
+    let file =
+        Ini::load_from_file(path).map_err(|e| EntryParseError::InvalidIni {
+            file: path_str.clone(),
+            err: e.into(),
+        })?;
+    let entry = file.section(Some("Desktop Entry".to_owned())).ok_or(
+        EntryParseError::MissingSection {
+            file: path_str.clone(),
+        },
+    )?;
+    if prop_is_true(entry.get("NoDisplay")).map_err(|_| {
+        EntryParseError::InvalidPropVal {
+            file: path_str.clone(),
+            name: "NoDisplay".into(),
+            value: entry.get("NoDisplay").unwrap().clone(),
+        }
+    })? || prop_is_true(entry.get("Hidden")).map_err(|_| {
+        EntryParseError::InvalidPropVal {
+            file: path_str.clone(),
+            name: "Hidden".into(),
+            value: entry.get("Hidden").unwrap().clone(),
+        }
     })? {
         return Ok(None);
     }

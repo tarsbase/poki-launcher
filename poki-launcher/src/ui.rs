@@ -135,19 +135,26 @@ impl PokiLauncher {
         self.window_width = apps.config.window_width;
         self.window_width_changed();
 
-        self.background_color = prepend_hash(apps.config.background_color.clone()).into();
+        self.background_color =
+            prepend_hash(apps.config.background_color.clone()).into();
         self.background_color_changed();
-        self.border_color = prepend_hash(apps.config.border_color.clone()).into();
+        self.border_color =
+            prepend_hash(apps.config.border_color.clone()).into();
         self.background_color_changed();
-        self.input_box_color = prepend_hash(apps.config.input_box_color.clone()).into();
+        self.input_box_color =
+            prepend_hash(apps.config.input_box_color.clone()).into();
         self.input_box_color_changed();
-        self.input_text_color = prepend_hash(apps.config.input_text_color.clone()).into();
+        self.input_text_color =
+            prepend_hash(apps.config.input_text_color.clone()).into();
         self.input_text_color_changed();
-        self.selected_app_color = prepend_hash(apps.config.selected_app_color.clone()).into();
+        self.selected_app_color =
+            prepend_hash(apps.config.selected_app_color.clone()).into();
         self.selected_app_color_changed();
-        self.app_text_color = prepend_hash(apps.config.app_text_color.clone()).into();
+        self.app_text_color =
+            prepend_hash(apps.config.app_text_color.clone()).into();
         self.app_separator_color_changed();
-        self.app_separator_color = prepend_hash(apps.config.app_separator_color.clone()).into();
+        self.app_separator_color =
+            prepend_hash(apps.config.app_separator_color.clone()).into();
         self.app_separator_color_changed();
 
         // Setup signal notifier and callback
@@ -203,18 +210,28 @@ impl PokiLauncher {
                 }
             };
 
-            for path in &APPS.lock().expect("Apps Mutex Poisoned").config.app_paths {
+            for path in
+                &APPS.lock().expect("Apps Mutex Poisoned").config.app_paths
+            {
                 let expanded = match shellexpand::full(&path) {
                     Ok(path) => path.into_owned(),
                     Err(e) => {
-                        error!("Failed to expand desktop files dir path {}: {:?}", path, e);
+                        error!(
+                            "Failed to expand desktop files dir path {}: {:?}",
+                            path, e
+                        );
                         continue;
                     }
                 };
                 let path = Path::new(&expanded);
                 if path.exists() {
-                    if let Err(e) = watcher.watch(path, RecursiveMode::Recursive) {
-                        warn!("Failed to set watcher for dir {}: {}", expanded, e);
+                    if let Err(e) =
+                        watcher.watch(path, RecursiveMode::Recursive)
+                    {
+                        warn!(
+                            "Failed to set watcher for dir {}: {}",
+                            expanded, e
+                        );
                     }
                 }
             }
@@ -247,16 +264,18 @@ impl PokiLauncher {
             .lock()
             .expect("Apps Mutex Poisoned")
             .get_ranked_list(&text, Some(MAX_APPS_SHOWN));
-        if !self.has_moved || !self.list.iter().any(|app| app.uuid == self.get_selected()) {
+        if !self.has_moved
+            || !self.list.iter().any(|app| app.uuid == self.get_selected())
+        {
             if !self.list.is_empty() {
                 self.set_selected(self.list[0].uuid.clone());
             } else {
                 self.set_selected(QString::default());
             }
         }
-        self.model
-            .borrow_mut()
-            .reset_data(self.list.clone().into_iter().map(QApp::from).collect());
+        self.model.borrow_mut().reset_data(
+            self.list.clone().into_iter().map(QApp::from).collect(),
+        );
     }
 
     fn scan(&mut self) {
@@ -272,7 +291,8 @@ impl PokiLauncher {
         });
         thread::spawn(move || {
             let mut apps = APPS.lock().expect("Apps Mutex Poisoned");
-            let (app_list, errors) = scan_desktop_entries(&apps.config.app_paths);
+            let (app_list, errors) =
+                scan_desktop_entries(&apps.config.app_paths);
             apps.merge_new_entries(app_list);
             if let Err(e) = apps.save(&*DB_PATH) {
                 error!("Saving database failed: {}", e);
@@ -401,7 +421,12 @@ qrc!(init_qml_resources,
 
 pub fn init_ui() {
     init_qml_resources();
-    qml_register_type::<PokiLauncher>(cstr!("PokiLauncher"), 1, 0, cstr!("PokiLauncher"));
+    qml_register_type::<PokiLauncher>(
+        cstr!("PokiLauncher"),
+        1,
+        0,
+        cstr!("PokiLauncher"),
+    );
 }
 
 pub fn log_errs(errs: &[Error]) {
