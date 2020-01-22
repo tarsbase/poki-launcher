@@ -21,8 +21,8 @@ import PokiLauncher 1.0
 Window {
     id: window
     visible: launcher.visible
-    width: 500
-    height: 500
+    width: launcher.window_width
+    height: launcher.window_height
     title: qsTr("Poki Launcher")
     flags: Qt.WindowActive | Qt.Dialog | Qt.FramelessWindowHint
 

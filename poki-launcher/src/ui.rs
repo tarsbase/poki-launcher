@@ -90,6 +90,9 @@ struct PokiLauncher {
     scanning: qt_property!(bool; NOTIFY scanning_changed),
     has_moved: qt_property!(bool),
 
+    window_height: qt_property!(i32; NOTIFY window_height_changed),
+    window_width: qt_property!(i32; NOTIFY window_width_changed),
+
     init: qt_method!(fn(&mut self)),
     search: qt_method!(fn(&mut self, text: String)),
     scan: qt_method!(fn(&mut self)),
@@ -103,11 +106,19 @@ struct PokiLauncher {
     visible_changed: qt_signal!(),
     scanning_changed: qt_signal!(),
     model_changed: qt_signal!(),
+    window_height_changed: qt_signal!(),
+    window_width_changed: qt_signal!(),
 }
 
 impl PokiLauncher {
     fn init(&mut self) {
         self.scan();
+
+        let mut apps = APPS.lock().expect("Mutex poisoned");
+        self.window_height = apps.config.window_height.unwrap_or(500);
+        self.window_height_changed();
+        self.window_width = apps.config.window_width.unwrap_or(500);
+        self.window_width_changed();
 
         // Setup signal notifier and callback
         self.visible = SHOW_ON_START.with(|b| b.get());

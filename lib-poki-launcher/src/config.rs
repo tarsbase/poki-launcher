@@ -34,6 +34,8 @@ impl Default for Config {
         Config {
             app_paths: vec!["/usr/share/applications".to_owned()],
             term_cmd: None,
+            window_height: None,
+            window_width: None,
         }
     }
 }

@@ -14,4 +14,6 @@
     # Set the command used to open terminal apps
     # Will use `$TERM -e` by default
     // term_cmd: "xterm -e"
+    window_height: 500
+    window_width: 500
 }
