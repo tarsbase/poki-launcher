@@ -17,10 +17,10 @@
 use std::process::Command;
 
 pub fn foreground(name: &str) -> bool {
-    Command::new("wmctrl")
-        .arg("-a")
-        .arg(&name)
-        .status()
-        .unwrap()
-        .success()
+	Command::new("wmctrl")
+		.arg("-a")
+		.arg(&name)
+		.status()
+		.unwrap()
+		.success()
 }

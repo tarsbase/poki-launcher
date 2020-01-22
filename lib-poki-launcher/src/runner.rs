@@ -29,61 +29,61 @@ use super::App;
 #[derive(Debug, Error)]
 #[error("Execution failed with Exec line {exec}: {err}")]
 pub struct RunError {
-    /// The exec string from the app
-    exec: String,
-    /// The error to propagate.
-    err: Error,
+	/// The exec string from the app
+	exec: String,
+	/// The error to propagate.
+	err: Error,
 }
 
 fn parse_exec<'a>(exec: &'a str) -> (String, Vec<&'a str>) {
-    let mut iter = exec.split(' ');
-    let cmd = iter.next().expect("Empty Exec").to_owned();
-    let args = iter.collect();
-    (cmd, args)
+	let mut iter = exec.split(' ');
+	let cmd = iter.next().expect("Empty Exec").to_owned();
+	let args = iter.collect();
+	(cmd, args)
 }
 
 fn with_term<'a>(
-    config: &Config,
-    exec: &'a str,
+	config: &Config,
+	exec: &'a str,
 ) -> Result<(String, Vec<&'a str>), Error> {
-    let term = if let Some(term) = &config.term_cmd {
-        term.clone()
-    } else {
-        std::env::var("TERM")?
-    };
-    let mut args: Vec<&str> = exec.split(' ').collect();
-    args.insert(0, "-e");
-    Ok((term, args))
+	let term = if let Some(term) = &config.term_cmd {
+		term.clone()
+	} else {
+		std::env::var("TERM")?
+	};
+	let mut args: Vec<&str> = exec.split(' ').collect();
+	args.insert(0, "-e");
+	Ok((term, args))
 }
 
 impl App {
-    /// Run the app.
-    pub fn run(&self, config: &Config) -> Result<(), Error> {
-        debug!("Exec: `{}`", self.exec);
-        let (cmd, args) = if self.terminal {
-            with_term(&config, &self.exec)?
-        } else {
-            parse_exec(&self.exec)
-        };
-        debug!("Running `{} {}`", cmd, args.join(" "));
-        let mut command = Command::new(&cmd);
-        command
-            .args(&args)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
-        unsafe {
-            command.pre_exec(|| {
-                let pid = getpid();
-                // TODO Hanle error here
-                setpgid(pid, pid).expect("Failed to set pgid");
-                Ok(())
-            });
-        }
-        let _child = command.spawn().map_err(|e| RunError {
-            exec: self.exec.clone(),
-            err: e.into(),
-        })?;
-        foreground(&cmd);
-        Ok(())
-    }
+	/// Run the app.
+	pub fn run(&self, config: &Config) -> Result<(), Error> {
+		debug!("Exec: `{}`", self.exec);
+		let (cmd, args) = if self.terminal {
+			with_term(&config, &self.exec)?
+		} else {
+			parse_exec(&self.exec)
+		};
+		debug!("Running `{} {}`", cmd, args.join(" "));
+		let mut command = Command::new(&cmd);
+		command
+			.args(&args)
+			.stdout(Stdio::null())
+			.stderr(Stdio::null());
+		unsafe {
+			command.pre_exec(|| {
+				let pid = getpid();
+				// TODO Hanle error here
+				setpgid(pid, pid).expect("Failed to set pgid");
+				Ok(())
+			});
+		}
+		let _child = command.spawn().map_err(|e| RunError {
+			exec: self.exec.clone(),
+			err: e.into(),
+		})?;
+		foreground(&cmd);
+		Ok(())
+	}
 }
