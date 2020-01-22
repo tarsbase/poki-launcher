@@ -61,29 +61,16 @@ impl Config {
     pub fn load() -> Result<Config, Error> {
         let mut cfg = config::Config::default();
         let config_dir = DIRS.config_dir();
-        let mut file_path = None;
+        let file_path = config_dir.join("poki-launcher.hjson");
         if !config_dir.exists() {
             create_dir(&config_dir)?;
         }
-        for entry in config_dir.read_dir()? {
-            if let Ok(entry) = entry {
-                if entry
-                    .file_name()
-                    .into_string()
-                    .unwrap()
-                    .starts_with("poki-launcher")
-                {
-                    file_path = Some(entry.path());
-                }
-            }
+
+        if file_path.as_path().exists() {
+            cfg.merge(config::File::with_name(file_path.to_str().unwrap()))?;
+            Ok(cfg.try_into()?)
+        } else {
+            Ok(Self::default())
         }
-        let file_path = match file_path {
-            Some(p) => p,
-            None => {
-                return Ok(Self::default());
-            }
-        };
-        cfg.merge(config::File::with_name(file_path.to_str().unwrap()))?;
-        Ok(cfg.try_into()?)
     }
 }
