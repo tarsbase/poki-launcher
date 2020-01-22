@@ -17,7 +17,7 @@
 
 
 Name:           poki-launcher
-Version:        0.3.0
+Version:        0.4.0
 Release:        1
 Summary:        An application launcher for Linux
 License:        GPL-3.0
