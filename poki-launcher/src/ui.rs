@@ -90,16 +90,16 @@ struct PokiLauncher {
     scanning: qt_property!(bool; NOTIFY scanning_changed),
     has_moved: qt_property!(bool),
 
-    window_height: qt_property!(i32; NOTIFY window_height_changed),
-    window_width: qt_property!(i32; NOTIFY window_width_changed),
+    window_height: qt_property!(i32; NOTIFY settings_changed),
+    window_width: qt_property!(i32; NOTIFY settings_changed),
 
-    background_color: qt_property!(QString; NOTIFY background_color_changed),
-    border_color: qt_property!(QString; NOTIFY background_color_changed),
-    input_box_color: qt_property!(QString; NOTIFY input_box_color_changed),
-    input_text_color: qt_property!(QString; NOTIFY input_text_color_changed),
-    selected_app_color: qt_property!(QString; NOTIFY selected_app_color_changed),
-    app_text_color: qt_property!(QString; NOTIFY app_text_color_changed),
-    app_separator_color: qt_property!(QString; NOTIFY app_separator_color_changed),
+    background_color: qt_property!(QString; NOTIFY settings_changed),
+    border_color: qt_property!(QString; NOTIFY settings_changed),
+    input_box_color: qt_property!(QString; NOTIFY settings_changed),
+    input_text_color: qt_property!(QString; NOTIFY settings_changed),
+    selected_app_color: qt_property!(QString; NOTIFY settings_changed),
+    app_text_color: qt_property!(QString; NOTIFY settings_changed),
+    app_separator_color: qt_property!(QString; NOTIFY settings_changed),
 
     init: qt_method!(fn(&mut self)),
     search: qt_method!(fn(&mut self, text: String)),
@@ -114,15 +114,7 @@ struct PokiLauncher {
     visible_changed: qt_signal!(),
     scanning_changed: qt_signal!(),
     model_changed: qt_signal!(),
-    window_height_changed: qt_signal!(),
-    window_width_changed: qt_signal!(),
-    background_color_changed: qt_signal!(),
-    border_color_changed: qt_signal!(),
-    input_box_color_changed: qt_signal!(),
-    input_text_color_changed: qt_signal!(),
-    selected_app_color_changed: qt_signal!(),
-    app_text_color_changed: qt_signal!(),
-    app_separator_color_changed: qt_signal!(),
+    settings_changed: qt_signal!(),
 }
 
 impl PokiLauncher {
@@ -131,31 +123,24 @@ impl PokiLauncher {
 
         let apps = APPS.lock().expect("Mutex poisoned");
         self.window_height = apps.config.window_height;
-        self.window_height_changed();
         self.window_width = apps.config.window_width;
-        self.window_width_changed();
 
         self.background_color =
             prepend_hash(apps.config.background_color.clone()).into();
-        self.background_color_changed();
         self.border_color =
             prepend_hash(apps.config.border_color.clone()).into();
-        self.background_color_changed();
         self.input_box_color =
             prepend_hash(apps.config.input_box_color.clone()).into();
-        self.input_box_color_changed();
         self.input_text_color =
             prepend_hash(apps.config.input_text_color.clone()).into();
-        self.input_text_color_changed();
         self.selected_app_color =
             prepend_hash(apps.config.selected_app_color.clone()).into();
-        self.selected_app_color_changed();
         self.app_text_color =
             prepend_hash(apps.config.app_text_color.clone()).into();
-        self.app_separator_color_changed();
         self.app_separator_color =
             prepend_hash(apps.config.app_separator_color.clone()).into();
-        self.app_separator_color_changed();
+
+        self.settings_changed();
 
         // Setup signal notifier and callback
         self.visible = SHOW_ON_START.with(|b| b.get());
