@@ -46,7 +46,7 @@
     # Font size (pt) of app list
     app_font_size: 20
 
-    # Don't attempt to force focus on launched window
-    # Turn off on wayland
+    # Attempt to force focus on launched window
+    # Not recommended, Turn off on wayland
     attempt_force_focus: false
 }
