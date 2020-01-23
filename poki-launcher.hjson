@@ -34,10 +34,10 @@
 
     # Change the colors of the UI elements
     background_color: "#282a36"
-    border_color: "#2e303b",
-    input_box_color: "#44475a",
-    input_text_color: "#f8f8f2",
-    selected_app_color: "#44475a",
-    app_text_color: "#f8f8f2",
-    app_separator_color: "#bd93f9",
+    border_color: "#2e303b"
+    input_box_color: "#44475a"
+    input_text_color: "#f8f8f2"
+    selected_app_color: "#44475a"
+    app_text_color: "#f8f8f2"
+    app_separator_color: "#bd93f9"
 }
