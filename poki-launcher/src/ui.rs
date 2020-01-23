@@ -103,6 +103,7 @@ struct PokiLauncher {
 
     input_font_size: qt_property!(i32; NOTIFY settings_changed),
     app_font_size: qt_property!(i32; NOTIFY settings_changed),
+    input_box_ratio: qt_property!(f32; NOTIFY settings_changed),
 
     init: qt_method!(fn(&mut self)),
     search: qt_method!(fn(&mut self, text: String)),
@@ -145,6 +146,7 @@ impl PokiLauncher {
 
         self.input_font_size = apps.config.input_font_size;
         self.app_font_size = apps.config.app_font_size;
+        self.input_box_ratio = apps.config.input_box_ratio;
 
         self.settings_changed();
 

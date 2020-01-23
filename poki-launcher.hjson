@@ -45,6 +45,9 @@
     input_font_size: 13
     # Font size (pt) of app list
     app_font_size: 20
+    # Percent of the app ui height taken up by the input box
+    # 0.1 = 10%
+    input_box_ratio: 0.1
 
     # Attempt to force focus on launched window
     # Not recommended, Turn off on wayland

@@ -43,6 +43,7 @@ pub struct Config {
 
     pub input_font_size: i32,
     pub app_font_size: i32,
+    pub input_box_ratio: f32,
 }
 
 impl Default for Config {
@@ -71,6 +72,7 @@ impl Default for Config {
 
             input_font_size: 13,
             app_font_size: 20,
+            input_box_ratio: 0.1,
         }
     }
 }

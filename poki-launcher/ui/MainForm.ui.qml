@@ -56,7 +56,7 @@ Rectangle {
 			color: launcher.input_box_color
 			radius: 0
 			Layout.preferredWidth: window.width
-			Layout.preferredHeight: window.height * 0.1
+			Layout.preferredHeight: window.height * launcher.input_box_ratio
 			Layout.alignment: Qt.AlignHCenter
 
 			TextInput {
@@ -89,7 +89,7 @@ Rectangle {
             id: app_list
 			Layout.alignment: Qt.AlignHCenter
 			Layout.preferredWidth: window.width
-			Layout.preferredHeight: window.height * 0.9
+			Layout.preferredHeight: window.height * (1.0 - launcher.input_box_ratio)
 			interactive: false
 
 			model: launcher.model
