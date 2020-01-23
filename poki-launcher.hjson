@@ -41,6 +41,11 @@
     app_text_color: "#f8f8f2"
     app_separator_color: "#bd93f9"
 
+    # Font size (pt) of the input box
+    input_font_size: 13
+    # Font size (pt) of app list
+    app_font_size: 20
+
     # Don't attempt to force focus on launched window
     # Turn off on wayland
     attempt_force_focus: false

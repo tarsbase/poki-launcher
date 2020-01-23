@@ -101,6 +101,9 @@ struct PokiLauncher {
     app_text_color: qt_property!(QString; NOTIFY settings_changed),
     app_separator_color: qt_property!(QString; NOTIFY settings_changed),
 
+    input_font_size: qt_property!(i32; NOTIFY settings_changed),
+    app_font_size: qt_property!(i32; NOTIFY settings_changed),
+
     init: qt_method!(fn(&mut self)),
     search: qt_method!(fn(&mut self, text: String)),
     scan: qt_method!(fn(&mut self)),
@@ -139,6 +142,9 @@ impl PokiLauncher {
             prepend_hash(apps.config.app_text_color.clone()).into();
         self.app_separator_color =
             prepend_hash(apps.config.app_separator_color.clone()).into();
+
+        self.input_font_size = apps.config.input_font_size;
+        self.app_font_size = apps.config.app_font_size;
 
         self.settings_changed();
 

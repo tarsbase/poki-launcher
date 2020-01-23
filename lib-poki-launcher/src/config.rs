@@ -28,6 +28,7 @@ pub struct Config {
     pub app_paths: Vec<String>,
     /// Command to use to run terminal apps
     pub term_cmd: Option<String>,
+
     pub window_height: i32,
     pub window_width: i32,
     pub background_color: String,
@@ -37,7 +38,11 @@ pub struct Config {
     pub selected_app_color: String,
     pub app_text_color: String,
     pub app_separator_color: String,
+
     pub attempt_force_focus: bool,
+
+    pub input_font_size: i32,
+    pub app_font_size: i32,
 }
 
 impl Default for Config {
@@ -50,8 +55,10 @@ impl Default for Config {
                 "/var/lib/flatpak/exports/share/applications".into(),
             ],
             term_cmd: None,
+
             window_height: 500,
             window_width: 500,
+
             background_color: "#282a36".into(),
             border_color: "#2e303b".into(),
             input_box_color: "#44475a".into(),
@@ -59,7 +66,11 @@ impl Default for Config {
             selected_app_color: "#44475a".into(),
             app_text_color: "#f8f8f2".into(),
             app_separator_color: "#bd93f9".into(),
+
             attempt_force_focus: true,
+
+            input_font_size: 13,
+            app_font_size: 20,
         }
     }
 }
