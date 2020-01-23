@@ -40,4 +40,8 @@
     selected_app_color: "#44475a"
     app_text_color: "#f8f8f2"
     app_separator_color: "#bd93f9"
+
+    # Don't attempt to force focus on launched window
+    # Turn off on wayland
+    attempt_force_focus: false
 }

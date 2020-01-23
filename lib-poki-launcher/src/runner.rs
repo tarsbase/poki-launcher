@@ -83,7 +83,9 @@ impl App {
             exec: self.exec.clone(),
             err: e.into(),
         })?;
-        foreground(&cmd);
+        if config.attempt_force_focus {
+            foreground(&cmd);
+        }
         Ok(())
     }
 }

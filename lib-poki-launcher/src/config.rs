@@ -37,6 +37,7 @@ pub struct Config {
     pub selected_app_color: String,
     pub app_text_color: String,
     pub app_separator_color: String,
+    pub attempt_force_focus: bool,
 }
 
 impl Default for Config {
@@ -58,6 +59,7 @@ impl Default for Config {
             selected_app_color: "#44475a".into(),
             app_text_color: "#f8f8f2".into(),
             app_separator_color: "#bd93f9".into(),
+            attempt_force_focus: true,
         }
     }
 }
