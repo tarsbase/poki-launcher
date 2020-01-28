@@ -110,6 +110,8 @@ Rectangle {
 							asynchronous: true
 							Layout.preferredWidth: item.height * 0.8
 							Layout.preferredHeight: item.height * 0.8
+							Layout.maximumHeight: item.height * 0.8
+							Layout.maximumWidth: item.height * 0.8
 							Layout.alignment: Qt.AlignLeft
 							fillMode: Image.PreserveAspectFit
 							source: "image://icon/" + icon
@@ -117,6 +119,8 @@ Rectangle {
 
 						Text {
 							Layout.alignment: Qt.AlignLeft
+							Layout.fillWidth: true
+							Layout.leftMargin: item.width * 0.05
 							color: launcher.app_text_color
 							text: name
 							// If the size isn't set initally Qt compains
