@@ -65,8 +65,8 @@ Rectangle {
 				color: launcher.input_text_color
 				padding: 10
 				anchors.verticalCenter: input_box.verticalCenter
-				// font.pixelSize: window.height * 0.1 * 0.4
-				font.pointSize: launcher.input_font_size
+				// If the size isn't set initally Qt compains
+				font.pointSize: launcher.input_font_size || 13
 				onTextChanged: launcher.search(text)
 				Keys.onUpPressed: launcher.up()
 				Keys.onDownPressed: launcher.down()
@@ -119,8 +119,8 @@ Rectangle {
 							Layout.alignment: Qt.AlignLeft
 							color: launcher.app_text_color
 							text: name
-							font.pointSize: launcher.app_font_size
-							// font.pixelSize: item.height * 0.4
+							// If the size isn't set initally Qt compains
+							font.pointSize: launcher.app_font_size || 20
 						}
 					}
 				}
