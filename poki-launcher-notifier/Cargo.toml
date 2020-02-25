@@ -31,5 +31,5 @@ edition = "2018"
 [dependencies]
 signal-hook = "0.1"
 libc = "0.2"
-nix = "0.15"
+nix = "0.17"
 anyhow = "1.0"
