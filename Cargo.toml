@@ -21,7 +21,6 @@ members = [
 	"lib-poki-launcher",
 	"poki-launcher",
 	"poki-launcher-notifier",
-	"poki-launcher-x11",
 ]
 
 [profile.release]

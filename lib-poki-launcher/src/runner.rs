@@ -18,7 +18,6 @@ use crate::config::Config;
 use anyhow::Error;
 use log::debug;
 use nix::unistd::{getpid, setpgid};
-use poki_launcher_x11::foreground;
 use std::os::unix::process::CommandExt as _;
 use std::process::{Command, Stdio};
 use thiserror::Error;
@@ -83,9 +82,6 @@ impl App {
             exec: self.exec.clone(),
             err: e.into(),
         })?;
-        if config.attempt_force_focus {
-            foreground(&cmd);
-        }
         Ok(())
     }
 }

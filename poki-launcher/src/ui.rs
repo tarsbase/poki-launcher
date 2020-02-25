@@ -21,7 +21,6 @@ use lib_poki_launcher::prelude::*;
 use log::{debug, error, trace, warn};
 use notify::{watcher, RecursiveMode, Watcher};
 use poki_launcher_notifier::{self as notifier, Notifier};
-use poki_launcher_x11::foreground;
 use qmetaobject::*;
 use std::cell::{Cell, RefCell};
 use std::convert::From;
@@ -173,7 +172,6 @@ impl PokiLauncher {
                 Ok(msg) => match msg {
                     Msg::Show => {
                         show(());
-                        foreground("Poki Launcher");
                     }
                     Msg::Exit => {
                         drop(rx);

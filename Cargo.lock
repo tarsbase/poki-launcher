@@ -498,7 +498,6 @@ dependencies = [
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nix 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "poki-launcher-x11 0.1.0",
  "rmp-serde 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust-ini 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.99 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -724,7 +723,6 @@ dependencies = [
  "nix 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "notify 4.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "poki-launcher-notifier 0.1.0",
- "poki-launcher-x11 0.1.0",
  "qmetaobject 0.1.4 (git+https://github.com/zethra/qmetaobject-rs.git?rev=8bd0121)",
  "rmp-serde 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -741,10 +739,6 @@ dependencies = [
  "nix 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "signal-hook 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
-
-[[package]]
-name = "poki-launcher-x11"
-version = "0.1.0"
 
 [[package]]
 name = "ppv-lite86"

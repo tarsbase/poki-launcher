@@ -39,7 +39,6 @@ uuid = { version = "0.8", features = ["serde", "v4"] }
 config = { version = "0.10", default-features = false, features = ["hjson"] }
 directories = "2.0"
 lazy_static = "1.4"
-poki-launcher-x11 = { version = "0.1.0", path = "../poki-launcher-x11" }
 nix = "0.16"
 shellexpand = "1.1"
 itertools = "0.8"

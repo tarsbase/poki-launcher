@@ -39,8 +39,6 @@ pub struct Config {
     pub app_text_color: String,
     pub app_separator_color: String,
 
-    pub attempt_force_focus: bool,
-
     pub input_font_size: i32,
     pub app_font_size: i32,
     pub input_box_ratio: f32,
@@ -67,8 +65,6 @@ impl Default for Config {
             selected_app_color: "#44475a".into(),
             app_text_color: "#f8f8f2".into(),
             app_separator_color: "#bd93f9".into(),
-
-            attempt_force_focus: true,
 
             input_font_size: 13,
             app_font_size: 20,
