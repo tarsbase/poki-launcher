@@ -16,7 +16,7 @@
  */
 use crate::config::Config;
 use crate::db::AppsDB;
-use crate::desktop_entry::{parse_desktop_file, EntryParseError};
+use crate::desktop_entry::EntryParseError;
 use crate::App;
 use anyhow::Error;
 use std::path::PathBuf;
@@ -84,7 +84,7 @@ pub fn scan_desktop_entries(paths: &[String]) -> (Vec<App>, Vec<Error>) {
     let (entries, mut errors) = desktop_entires(&paths);
     let (apps, errs): (Vec<_>, Vec<_>) = entries
         .into_iter()
-        .map(|path| parse_desktop_file(&path))
+        .map(|path| App::parse_desktop_file(&path))
         .partition(Result::is_ok);
     let mut apps: Vec<_> = apps
         .into_iter()

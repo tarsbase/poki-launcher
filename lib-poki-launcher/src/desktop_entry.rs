@@ -16,9 +16,13 @@
  */
 use super::App;
 use anyhow::Error;
-use ini::Ini;
+use anyhow::Result;
+use freedesktop_entry_parser::*;
 use itertools::Itertools as _;
+use std::fs::File;
+use std::io::Read as _;
 use std::path::Path;
+use std::str::from_utf8;
 use thiserror::Error;
 
 /// Error from paring a desktop entry
@@ -50,7 +54,7 @@ pub enum EntryParseError {
     },
 }
 
-fn prop_is_true(item: Option<&String>) -> Result<bool, Error> {
+fn prop_is_true(item: Option<&str>) -> Result<bool, Error> {
     match item {
         Some(text) => Ok(text.parse()?),
         None => Ok(false),
@@ -62,90 +66,114 @@ fn strip_entry_args(exec: &str) -> String {
     iter.filter(|item| !item.starts_with('%')).join(" ")
 }
 
-/// Parse a desktop entry
-///
-/// # Arguments
-///
-/// * `path` - Path to the desktop entry
-///
-/// # Return
-///
-/// Returns `Ok(None)` if the app should not be listed.
-///
-/// # Example
-///
-/// Parse a list of desktop entries, separating successes from failures,
-/// then removing apps that shouldn't be displayed (None) from the successes.
-/// ```no_run
-/// use lib_poki_launcher::desktop_entry::parse_desktop_file;
-/// use std::path::Path;
-///
-/// let entries = vec![Path::new("./firefox.desktop"), Path::new("./chrome.desktop")];
-/// let (apps, errors): (Vec<_>, Vec<_>) = entries
-///     .into_iter()
-///     .map(|path| parse_desktop_file(&path))
-///     .partition(Result::is_ok);
-/// let mut apps: Vec<_> = apps
-///     .into_iter()
-///     .map(Result::unwrap)
-///     .filter_map(|x| x)
-///     .collect();
-/// ```
-pub fn parse_desktop_file(
-    path: impl AsRef<Path>,
-) -> Result<Option<App>, Error> {
-    let path_str = path.as_ref().to_string_lossy().into_owned();
-    // TODO Finish implementation
-    let file =
-        Ini::load_from_file(path).map_err(|e| EntryParseError::InvalidIni {
-            file: path_str.clone(),
-            err: e.into(),
+impl App {
+    /// Parse a desktop entry
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Path to the desktop entry
+    ///
+    /// # Return
+    ///
+    /// Returns `Ok(None)` if the app should not be listed.
+    ///
+    /// # Example
+    ///
+    /// Parse a list of desktop entries, separating successes from failures,
+    /// then removing apps that shouldn't be displayed (None) from the successes.
+    /// ```no_run
+    /// use lib_poki_launcher::App;
+    /// use std::path::Path;
+    ///
+    /// let entries = vec![Path::new("./firefox.desktop"), Path::new("./chrome.desktop")];
+    /// let (apps, errors): (Vec<_>, Vec<_>) = entries
+    ///     .into_iter()
+    ///     .map(|path| App::parse_desktop_file(&path))
+    ///     .partition(Result::is_ok);
+    /// let mut apps: Vec<_> = apps
+    ///     .into_iter()
+    ///     .map(Result::unwrap)
+    ///     .filter_map(|x| x)
+    ///     .collect();
+    /// ```
+    pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<Self>> {
+        let path_str = path.as_ref().to_string_lossy().into_owned();
+        // TODO Finish implementation
+        let mut file = File::open(path)?;
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf)?;
+        let section = parse_entry(&buf)
+            .map_err(|e| EntryParseError::InvalidIni {
+                file: path_str.clone(),
+                err: e.into(),
+            })?
+            .find(|section| {
+                if let Ok(section) = section {
+                    section.title == b"Desktop Entry"
+                } else {
+                    false
+                }
+            })
+            .ok_or(EntryParseError::MissingSection {
+                file: path_str.clone(),
+            })??;
+
+        let mut name = None;
+        let mut exec = None;
+        let mut no_display = None;
+        let mut hidden = None;
+        let mut icon = None;
+        let mut terminal = None;
+
+        for attr in section.attrs {
+            match attr.name {
+                b"Name" => name = Some(from_utf8(attr.value)?),
+                b"Exec" => exec = Some(from_utf8(attr.value)?),
+                b"NoDisplay" => no_display = Some(from_utf8(attr.value)?),
+                b"Hidden" => hidden = Some(from_utf8(attr.value)?),
+                b"Icon" => icon = Some(from_utf8(attr.value)?),
+                b"Terminal" => terminal = Some(from_utf8(attr.value)?),
+                _ => {}
+            }
+        }
+
+        if prop_is_true(no_display).map_err(|_| {
+            EntryParseError::InvalidPropVal {
+                file: path_str.to_owned(),
+                name: "NoDisplay".into(),
+                value: no_display.unwrap().to_owned(),
+            }
+        })? || prop_is_true(hidden).map_err(|_| {
+            EntryParseError::InvalidPropVal {
+                file: path_str.to_owned(),
+                name: "Hidden".into(),
+                value: hidden.unwrap().to_owned(),
+            }
+        })? {
+            return Ok(None);
+        }
+
+        let name = name.ok_or(EntryParseError::MissingName {
+            file: path_str.to_owned(),
         })?;
-    let entry = file.section(Some("Desktop Entry".to_owned())).ok_or(
-        EntryParseError::MissingSection {
-            file: path_str.clone(),
-        },
-    )?;
-    if prop_is_true(entry.get("NoDisplay")).map_err(|_| {
-        EntryParseError::InvalidPropVal {
-            file: path_str.clone(),
-            name: "NoDisplay".into(),
-            value: entry.get("NoDisplay").unwrap().clone(),
-        }
-    })? || prop_is_true(entry.get("Hidden")).map_err(|_| {
-        EntryParseError::InvalidPropVal {
-            file: path_str.clone(),
-            name: "Hidden".into(),
-            value: entry.get("Hidden").unwrap().clone(),
-        }
-    })? {
-        return Ok(None);
+        let exec = exec.ok_or(EntryParseError::MissingExec {
+            file: path_str.to_owned(),
+        })?;
+        let exec = strip_entry_args(exec);
+        let icon = match icon {
+            Some(icon) => icon.to_owned(),
+            None => String::new(),
+        };
+        let terminal = {
+            if let Some(value) = terminal {
+                value.parse()?
+            } else {
+                false
+            }
+        };
+
+        Ok(Some(App::new(name.to_owned(), icon, exec, terminal)))
     }
-    let name = entry
-        .get("Name")
-        .ok_or(EntryParseError::MissingName {
-            file: path_str.clone(),
-        })?
-        .clone();
-    let exec = entry
-        .get("Exec")
-        .ok_or(EntryParseError::MissingExec {
-            file: path_str.clone(),
-        })?
-        .clone();
-    let exec = strip_entry_args(&exec);
-    let icon = match entry.get("Icon") {
-        Some(icon) => icon.clone(),
-        None => String::new(),
-    };
-    let terminal = {
-        if let Some(value) = entry.get("Terminal") {
-            value.parse()?
-        } else {
-            false
-        }
-    };
-    Ok(Some(App::new(name, icon, exec, terminal)))
 }
 
 #[cfg(test)]
@@ -170,8 +198,6 @@ mod test {
     }
 
     mod parse_desktop_file {
-        use super::*;
-
         #[test]
         fn vaild_file_exist() {
             use crate::App;
@@ -188,7 +214,7 @@ mod test {
  Exec=/usr/bin/test --with-flag %f",
             )
             .unwrap();
-            let app = parse_desktop_file(&path).unwrap().unwrap();
+            let app = App::parse_desktop_file(&path).unwrap().unwrap();
             let other_app = App::new(
                 "Test".to_owned(),
                 "testicon".to_owned(),
