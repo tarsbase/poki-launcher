@@ -322,6 +322,7 @@ dependencies = [
 [[package]]
 name = "freedesktop_entry_parser"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom 5.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -501,7 +502,7 @@ dependencies = [
  "config 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "directories 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "file-lock 1.1.20 (registry+https://github.com/rust-lang/crates.io-index)",
- "freedesktop_entry_parser 0.1.0",
+ "freedesktop_entry_parser 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fuzzy-matcher 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1398,6 +1399,7 @@ dependencies = [
 "checksum failure_derive 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "ea1063915fd7ef4309e222a5a07cf9c319fb9c7836b1f89b85458672dbb127e1"
 "checksum file-lock 1.1.20 (registry+https://github.com/rust-lang/crates.io-index)" = "b16486239b3741480cef090b6f9924faf5dd5481022c6f266a51fab1a92971a2"
 "checksum filetime 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "1ff6d4dab0aa0c8e6346d46052e93b13a16cf847b54ed357087c35011048cc7d"
+"checksum freedesktop_entry_parser 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "48ea2dbb0b9924670d0cec21984e0ad63945309f3a96f61bf09a7c7e669fd710"
 "checksum fsevent 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5ab7d1bd1bd33cc98b0889831b72da23c0aa4df9cec7e0702f46ecea04b35db6"
 "checksum fsevent-sys 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f41b048a94555da0f42f1d632e2e19510084fb8e303b0daa2816e733fb3644a0"
 "checksum fuchsia-cprng 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"

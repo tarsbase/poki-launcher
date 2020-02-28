@@ -43,4 +43,4 @@ shellexpand = "2.0"
 itertools = "0.8"
 walkdir = "2.3"
 file-lock = "1.1"
-freedesktop_entry_parser = {version = "0.1", path = "../../linicon/freedesktop_entry_parser"}
+freedesktop_entry_parser = "0.1"
