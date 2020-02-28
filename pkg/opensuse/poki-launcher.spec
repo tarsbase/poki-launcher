@@ -17,12 +17,12 @@
 
 
 Name:           poki-launcher
-Version:        0.4.0
+Version:        0.5.0
 Release:        1
 Summary:        An application launcher for Linux
 License:        GPL-3.0
-URL:            https://github.com/zethra/poki-launcher
-Source0:        https://github.com/zethra/poki-launcher/archive/%{version}.tar.gz
+URL:            https://git.sr.ht/~zethra/poki-launcher
+Source0:        https://git.sr.ht/~zethra/poki-launcher/archive/%{version}.tar.gz
 Source1:        vendor.tar.xz
 Source2:        cargo-config
 BuildRequires:  rust >= 1.34
@@ -33,7 +33,6 @@ BuildRequires:  libqt5-qtbase-devel libqt5-qtdeclarative-devel
 %if 0%{?fedora}
 BuildRequires:  qt5-qtbase-devel qt5-qtdeclarative-devel
 %endif
-Requires:       wmctrl
 
 %description
 An application launcher for Linux
