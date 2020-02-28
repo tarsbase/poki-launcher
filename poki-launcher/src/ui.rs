@@ -38,7 +38,7 @@ lazy_static! {
         let data_dir = DIRS.data_dir();
         if !data_dir.exists() {
             create_dir(&data_dir).unwrap_or_else(|_| {
-                panic!("Failed to create data dir: {}", data_dir.to_string_lossy())
+                panic!("Error creating data dir: {}", data_dir.to_string_lossy())
             });
         }
         let mut db_file = data_dir.to_path_buf();
@@ -49,7 +49,7 @@ lazy_static! {
         let config = match Config::load() {
             Ok(config) => config,
             Err(e) => {
-                error!("Failed to load config file: {}", e);
+                error!("{}", e);
                 std::process::exit(2);
             }
         };
@@ -58,7 +58,7 @@ lazy_static! {
             match AppsDB::load(&*DB_PATH, config) {
                 Ok(apps) => apps,
                 Err(e) => {
-                    error!("Failed to load database file: {}", e);
+                    error!("{}", e);
                     std::process::exit(3);
                 }
             }
@@ -67,7 +67,7 @@ lazy_static! {
             log_errs(&errors);
             // TODO visual error indicator
             if let Err(e) = apps.save(&*DB_PATH) {
-                error!("Failed to save apps database to disk: {}", e);
+                error!("{}", e);
             }
             apps
         };
@@ -155,7 +155,7 @@ impl PokiLauncher {
         let rx = match Notifier::start() {
             Ok(rx) => rx,
             Err(e) => {
-                error!("Failed to start signal notifier: {}", e);
+                error!("{}", e.context("Error starting signal notifier"));
                 std::process::exit(5);
             }
         };
@@ -179,7 +179,10 @@ impl PokiLauncher {
                     }
                 },
                 Err(e) => {
-                    warn!("Signal notifier notifier error: {}", e);
+                    warn!(
+                        "{}",
+                        Error::new(e).context("Error with signal notifier")
+                    );
                 }
             }
         });
@@ -196,7 +199,11 @@ impl PokiLauncher {
             let mut watcher = match watcher(tx, Duration::from_secs(10)) {
                 Ok(watcher) => watcher,
                 Err(e) => {
-                    error!("Error creating file system watcher: {}", e);
+                    error!(
+                        "{}",
+                        Error::new(e)
+                            .context("Error creating file system watcher")
+                    );
                     return;
                 }
             };
@@ -208,8 +215,11 @@ impl PokiLauncher {
                     Ok(path) => path.into_owned(),
                     Err(e) => {
                         error!(
-                            "Failed to expand desktop files dir path {}: {:?}",
-                            path, e
+                            "{}",
+                            Error::new(e).context(format!(
+                                "Error expanding desktop files dir path {}",
+                                path
+                            ))
                         );
                         continue;
                     }
@@ -220,8 +230,11 @@ impl PokiLauncher {
                         watcher.watch(path, RecursiveMode::Recursive)
                     {
                         warn!(
-                            "Failed to set watcher for dir {}: {}",
-                            expanded, e
+                            "{}",
+                            Error::new(e).context(format!(
+                                "Error setting watcher for dir {}",
+                                expanded
+                            ))
                         );
                     }
                 }
@@ -286,7 +299,7 @@ impl PokiLauncher {
                 scan_desktop_entries(&apps.config.app_paths);
             apps.merge_new_entries(app_list);
             if let Err(e) = apps.save(&*DB_PATH) {
-                error!("Saving database failed: {}", e);
+                error!("{}", e);
             }
             log_errs(&errors);
             done(());
@@ -349,7 +362,7 @@ impl PokiLauncher {
         }
         apps.update(app);
         if let Err(e) = apps.save(&*DB_PATH) {
-            error!("Failed to save apps database to disk: {}", e);
+            error!("{}", e);
         }
         self.list.clear();
         self.model.borrow_mut().reset_data(Default::default());
@@ -369,7 +382,7 @@ impl PokiLauncher {
         use nix::unistd::Pid;
 
         if let Err(e) = kill(Pid::this(), Signal::SIGINT) {
-            error!("Failed to signal self to exit: {}", e);
+            error!("{}", Error::new(e).context("Error signaling self to exit"));
         }
     }
 }

@@ -20,7 +20,7 @@ use std::cmp::Ordering;
 
 use super::App;
 use crate::config::Config;
-use anyhow::Error;
+use anyhow::{Error, Result};
 use file_lock::FileLock;
 use fuzzy_matcher::skim::fuzzy_match;
 use rmp_serde as rmp;
@@ -64,22 +64,14 @@ impl AppsDB {
     /// # Arguments
     ///
     /// * `path` - Location of the database file
-    pub fn load(
-        path: impl AsRef<Path>,
-        config: Config,
-    ) -> Result<AppsDB, Error> {
+    pub fn load(path: impl AsRef<Path>, config: Config) -> Result<AppsDB> {
         let path = path.as_ref().display().to_string();
         let lock = FileLock::lock(&path, true, false).map_err(|e| {
-            AppDBError::FileOpen {
-                file: path.to_owned(),
-                err: e.into(),
-            }
+            Error::new(e).context(AppDBError::FileOpen(path.to_owned()))
         })?;
-        let mut apps: AppsDB =
-            rmp::from_read(&lock.file).map_err(|e| AppDBError::ParseDB {
-                file: path.to_owned(),
-                err: e.into(),
-            })?;
+        let mut apps: AppsDB = rmp::from_read(&lock.file).map_err(|e| {
+            Error::new(e).context(AppDBError::ParseDB(path.to_owned()))
+        })?;
         apps.config = config;
         Ok(apps)
     }
@@ -89,31 +81,22 @@ impl AppsDB {
     /// # Arguments
     ///
     /// * `path` - Location of the database file
-    pub fn save(&self, path: impl AsRef<Path>) -> Result<(), Error> {
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
         let path = path.as_ref().display().to_string();
         let buf = rmp::to_vec(&self).expect("Failed to encode apps db");
         if Path::new(&path).exists() {
             let mut lock = FileLock::lock(&path, true, true).map_err(|e| {
-                AppDBError::FileOpen {
-                    file: path.to_owned(),
-                    err: e.into(),
-                }
+                Error::new(e).context(AppDBError::FileOpen(path.to_owned()))
             })?;
-            lock.file
-                .write_all(&buf)
-                .map_err(|e| AppDBError::FileWrite {
-                    file: path.to_owned(),
-                    err: e.into(),
-                })?;
+            lock.file.write_all(&buf).map_err(|e| {
+                Error::new(e).context(AppDBError::FileWrite(path.to_owned()))
+            })?;
         } else {
-            let mut file =
-                File::create(&path).map_err(|e| AppDBError::FileCreate {
-                    file: path.to_owned(),
-                    err: e.into(),
-                })?;
-            file.write_all(&buf).map_err(|e| AppDBError::FileWrite {
-                file: path.to_owned(),
-                err: e.into(),
+            let mut file = File::create(&path).map_err(|e| {
+                Error::new(e).context(AppDBError::FileCreate(path.to_owned()))
+            })?;
+            file.write_all(&buf).map_err(|e| {
+                Error::new(e).context(AppDBError::FileWrite(path.to_owned()))
             })?;
         }
         Ok(())
@@ -230,7 +213,8 @@ pub fn current_time_secs() -> f64 {
                 / 1000.0
         }
         Err(e) => {
-            error!("invalid system time: {}", e);
+            // TODO handle this better
+            error!("Invalid system time: {}", e);
             process::exit(1);
         }
     }
@@ -238,14 +222,14 @@ pub fn current_time_secs() -> f64 {
 
 #[derive(Debug, Error)]
 pub enum AppDBError {
-    #[error("Failed to open apps database file {file}: {err}")]
-    FileOpen { file: String, err: Error },
-    #[error("Failed to create apps database file {file}: {err}")]
-    FileCreate { file: String, err: Error },
-    #[error("Failed to write to apps database file {file}: {err}")]
-    FileWrite { file: String, err: Error },
-    #[error("Couldn't parse apps database file {file}: {err}")]
-    ParseDB { file: String, err: Error },
+    #[error("Error opening apps database file {0}")]
+    FileOpen(String),
+    #[error("Error creating apps database file {0}")]
+    FileCreate(String),
+    #[error("Error writing to apps database file {0}")]
+    FileWrite(String),
+    #[error("Error parsing apps database file {0}")]
+    ParseDB(String),
 }
 
 #[cfg(test)]

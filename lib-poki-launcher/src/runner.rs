@@ -15,24 +15,13 @@
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::config::Config;
-use anyhow::Error;
+use anyhow::{Context as _, Error, Result};
 use log::debug;
 use nix::unistd::{getpid, setpgid};
 use std::os::unix::process::CommandExt as _;
 use std::process::{Command, Stdio};
-use thiserror::Error;
 
 use super::App;
-
-/// An error from running the app.
-#[derive(Debug, Error)]
-#[error("Execution failed with Exec line {exec}: {err}")]
-pub struct RunError {
-    /// The exec string from the app
-    exec: String,
-    /// The error to propagate.
-    err: Error,
-}
 
 fn parse_exec<'a>(exec: &'a str) -> (String, Vec<&'a str>) {
     let mut iter = exec.split(' ');
@@ -44,11 +33,17 @@ fn parse_exec<'a>(exec: &'a str) -> (String, Vec<&'a str>) {
 fn with_term<'a>(
     config: &Config,
     exec: &'a str,
-) -> Result<(String, Vec<&'a str>), Error> {
+) -> Result<(String, Vec<&'a str>)> {
     let term = if let Some(term) = &config.term_cmd {
         term.clone()
     } else {
-        std::env::var("TERM")?
+        std::env::var("TERM").context(
+            "Tried to start a terminal app but the \
+        TERM environment variable is not set so I don't know what terminal\
+        program to use.  To fix this either set the TERM variable or set\
+        term_cmd in the config file with the command you want to use\
+        to start your terminal.",
+        )?
     };
     let mut args: Vec<&str> = exec.split(' ').collect();
     args.insert(0, "-e");
@@ -57,7 +52,7 @@ fn with_term<'a>(
 
 impl App {
     /// Run the app.
-    pub fn run(&self, config: &Config) -> Result<(), Error> {
+    pub fn run(&self, config: &Config) -> Result<()> {
         debug!("Exec: `{}`", self.exec);
         let (cmd, args) = if self.terminal {
             with_term(&config, &self.exec)?
@@ -73,14 +68,26 @@ impl App {
         unsafe {
             command.pre_exec(|| {
                 let pid = getpid();
-                // TODO Hanle error here
-                setpgid(pid, pid).expect("Failed to set pgid");
+                if let Err(e) = setpgid(pid, pid) {
+                    log::error!(
+                        "{}",
+                        Error::new(e).context(format!(
+                            "Failed to set pgid of child process with pid {}",
+                            pid
+                        ))
+                    );
+                }
                 Ok(())
             });
         }
-        let _child = command.spawn().map_err(|e| RunError {
-            exec: self.exec.clone(),
-            err: e.into(),
+        let _child = command.spawn().with_context(|| {
+            format!(
+                "Execution failed with Exec line {}.\n\
+            If I'm trying to start your terminal emulator with\
+            the wrong options please set term_cmd in the config\
+            file with the correct command",
+                self.exec
+            )
         })?;
         Ok(())
     }
