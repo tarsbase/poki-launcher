@@ -15,8 +15,7 @@
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
 use super::App;
-use anyhow::Error;
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use freedesktop_entry_parser::*;
 use itertools::Itertools as _;
 use std::fs::File;
@@ -40,9 +39,6 @@ pub enum EntryParseError {
     /// Desktop file is missing the 'Icon' parameter.
     #[error("Desktop file {file} is missing the 'Icon' parameter")]
     MissingIcon { file: String },
-    /// Failed to parse deskop file.
-    #[error("Failed to parse desktop file {file}: {err}")]
-    InvalidIni { file: String, err: Error },
     #[error("In entry {file} property {name} has an invalid value {value}")]
     /// A property had an invalid value.
     /// This is returned if NoDisplay or Hidden are set ti a value that isn't
@@ -54,7 +50,7 @@ pub enum EntryParseError {
     },
 }
 
-fn prop_is_true(item: Option<&str>) -> Result<bool, Error> {
+fn prop_is_true(item: Option<&str>) -> Result<bool> {
     match item {
         Some(text) => Ok(text.parse()?),
         None => Ok(false),
@@ -97,15 +93,18 @@ impl App {
     ///     .collect();
     /// ```
     pub fn parse_desktop_file(path: impl AsRef<Path>) -> Result<Option<Self>> {
-        let path_str = path.as_ref().to_string_lossy().into_owned();
+        let path_str = path.as_ref().display().to_string();
         // TODO Finish implementation
-        let mut file = File::open(path)?;
+        let mut file = File::open(path).with_context(|| {
+            format!("Error opening desktop file {}", path_str)
+        })?;
         let mut buf = Vec::new();
-        file.read_to_end(&mut buf)?;
+        file.read_to_end(&mut buf).with_context(|| {
+            format!("Error reading desktop file {}", path_str)
+        })?;
         let section = parse_entry(&buf)
-            .map_err(|e| EntryParseError::InvalidIni {
-                file: path_str.clone(),
-                err: e.into(),
+            .with_context(|| {
+                format!("Error parsing desktop file {}", path_str)
             })?
             .find(|section| {
                 if let Ok(section) = section {
@@ -116,7 +115,10 @@ impl App {
             })
             .ok_or(EntryParseError::MissingSection {
                 file: path_str.clone(),
-            })??;
+            })?
+            .with_context(|| {
+                format!("Error parsing desktop file {}", path_str)
+            })?;
 
         let mut name = None;
         let mut exec = None;
@@ -166,7 +168,11 @@ impl App {
         };
         let terminal = {
             if let Some(value) = terminal {
-                value.parse()?
+                value.parse().map_err(|_| EntryParseError::InvalidPropVal {
+                    file: path_str.to_owned(),
+                    name: "Terminal".into(),
+                    value: value.to_owned(),
+                })?
             } else {
                 false
             }
