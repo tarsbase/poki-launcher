@@ -30,7 +30,7 @@ pub fn init_plugins(config: &Config) -> Vec<Box<dyn Plugin>> {
             "apps" => match self::apps::Apps::init(&config) {
                 Ok(apps) => plugins.push(Box::new(apps)),
                 Err(e) => {
-                    error!("{}", e);
+                    error!("{:?}", e);
                 }
             },
             _ => error!("Unknown plugin: {}", plugin_name),

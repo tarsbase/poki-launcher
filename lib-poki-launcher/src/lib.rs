@@ -88,7 +88,7 @@ impl PokiLauncher {
     pub fn reload(&mut self) -> Result<()> {
         for plugin in &mut self.plugins {
             if let Err(e) = plugin.reload(&self.config) {
-                error!("{}", e);
+                error!("{:?}", e);
             }
         }
         Ok(())
@@ -114,6 +114,6 @@ pub struct ListItem {
 
 pub fn log_errs(errs: &[Error]) {
     for err in errs {
-        error!("{}", err);
+        error!("{:?}", err);
     }
 }

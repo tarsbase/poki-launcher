@@ -33,7 +33,7 @@ lazy_static! {
         match Launcher::init() {
             Ok(launcher) => Arc::new(Mutex::new(launcher)),
             Err(e) => {
-                error!("{}", e);
+                error!("{:?}", e);
                 std::process::exit(3);
             }
         }
@@ -129,7 +129,7 @@ impl PokiLauncher {
         let rx = match Notifier::start() {
             Ok(rx) => rx,
             Err(e) => {
-                error!("{}", e.context("Error starting signal notifier"));
+                error!("{:?}", e.context("Error starting signal notifier"));
                 std::process::exit(5);
             }
         };
@@ -178,7 +178,7 @@ impl PokiLauncher {
                     }
                 }
                 Err(e) => {
-                    error!("{}", e);
+                    error!("{:?}", e);
                 }
             }
         });
@@ -201,7 +201,7 @@ impl PokiLauncher {
         {
             Ok(list) => list,
             Err(e) => {
-                error!("{}", e);
+                error!("{:?}", e);
                 return;
             }
         };
@@ -234,7 +234,7 @@ impl PokiLauncher {
             let mut launcher =
                 LAUNCHER.lock().expect("Launcher Mutex Poisoned");
             if let Err(e) = launcher.reload() {
-                error!("{}", e);
+                error!("{:?}", e);
             }
             done(());
             trace!("Loading...done");
@@ -293,7 +293,7 @@ impl PokiLauncher {
         let mut launcher = LAUNCHER.lock().expect("Launcher Mutex Poisoned");
 
         if let Err(err) = launcher.run(&item.id) {
-            error!("{}", err);
+            error!("{:?}", err);
         }
 
         self.list.clear();
@@ -314,7 +314,10 @@ impl PokiLauncher {
         use nix::unistd::Pid;
 
         if let Err(e) = kill(Pid::this(), Signal::SIGINT) {
-            error!("{}", Error::new(e).context("Error signaling self to exit"));
+            error!(
+                "{:?}",
+                Error::new(e).context("Error signaling self to exit")
+            );
         }
     }
 }

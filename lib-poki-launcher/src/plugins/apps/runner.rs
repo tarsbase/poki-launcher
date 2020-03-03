@@ -30,23 +30,26 @@ fn parse_exec<'a>(exec: &'a str) -> (String, Vec<&'a str>) {
 }
 
 fn with_term<'a>(
-    term_cmd: &Option<String>,
+    term_cmd: &'a Option<String>,
     exec: &'a str,
 ) -> Result<(String, Vec<&'a str>)> {
-    let term = if let Some(term) = term_cmd {
-        term.clone()
+    if let Some(term) = term_cmd {
+        let mut args: Vec<&str> =
+            term.split(' ').chain(exec.split(' ')).collect();
+        let term = args.remove(0).to_owned();
+        Ok((term, args))
     } else {
-        std::env::var("TERM").context(
+        let term = std::env::var("TERM").context(
             "Tried to start a terminal app but the \
         TERM environment variable is not set so I don't know what terminal\
         program to use.  To fix this either set the TERM variable or set\
         term_cmd in the config file with the command you want to use\
         to start your terminal.",
-        )?
-    };
-    let mut args: Vec<&str> = exec.split(' ').collect();
-    args.insert(0, "-e");
-    Ok((term, args))
+        )?;
+        let mut args: Vec<&str> = exec.split(' ').collect();
+        args.insert(0, "-e");
+        Ok((term, args))
+    }
 }
 
 impl App {
@@ -69,7 +72,7 @@ impl App {
                 let pid = getpid();
                 if let Err(e) = setpgid(pid, pid) {
                     log::error!(
-                        "{}",
+                        "{:?}",
                         Error::new(e).context(format!(
                             "Failed to set pgid of child process with pid {}",
                             pid
@@ -81,11 +84,12 @@ impl App {
         }
         let _child = command.spawn().with_context(|| {
             format!(
-                "Execution failed with Exec line {}.\n\
-            If I'm trying to start your terminal emulator with\
-            the wrong options please set term_cmd in the config\
+                "Execution failed with Exec line: `{}` `{}`.\n\
+            If I'm trying to start your terminal emulator with \
+            the wrong options please set term_cmd in the config \
             file with the correct command",
-                self.exec
+                cmd,
+                args.join(" ")
             )
         })?;
         Ok(())

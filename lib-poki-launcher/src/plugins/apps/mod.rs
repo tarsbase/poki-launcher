@@ -61,7 +61,7 @@ impl Apps {
             crate::log_errs(&errors);
             // TODO visual error indicator
             if let Err(e) = apps_db.save(&db_path) {
-                error!("{}", e);
+                error!("{:?}", e);
             }
             apps_db
         };
@@ -155,7 +155,7 @@ impl Plugin for Apps {
             Ok(watcher) => watcher,
             Err(e) => {
                 error!(
-                    "{}",
+                    "{:?}",
                     Error::new(e).context("Error creating file system watcher")
                 );
                 return;
@@ -166,7 +166,7 @@ impl Plugin for Apps {
                 Ok(path) => path.into_owned(),
                 Err(e) => {
                     error!(
-                        "{}",
+                        "{:?}",
                         Error::new(e).context(format!(
                             "Error expanding desktop files dir path {}",
                             path
@@ -192,13 +192,13 @@ impl Plugin for Apps {
         thread::spawn(move || loop {
             match rx.recv() {
                 Ok(event) => {
-                    debug!("Desktop file watcher received {:?}", event);
+                    debug!("Desktop file watcher received: {:?}", event);
                     if let Err(e) = event_tx.send(Event::Reload) {
-                        error!("Error sending event to ui: {}", e);
+                        error!("Error sending event to ui: {:?}", e);
                     }
                 }
                 Err(e) => {
-                    error!("Desktop file watcher error {}", e);
+                    error!("Desktop file watcher error: {:?}", e);
                     return;
                 }
             }
