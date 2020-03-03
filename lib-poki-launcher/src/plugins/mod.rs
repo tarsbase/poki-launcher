@@ -4,15 +4,36 @@ use crate::config::Config;
 use crate::event::Event;
 use crate::ListItem;
 use anyhow::Result;
-use log::error;
+use log::{error, warn};
+use serde_json::Value;
 use std::sync::mpsc::Sender;
+
+fn get_plugin_list(plugins: &Value) -> Vec<&String> {
+    if let Some(map) = plugins.as_object() {
+        map.keys().collect()
+    } else {
+        vec![]
+    }
+}
 
 pub fn init_plugins(config: &Config) -> Vec<Box<dyn Plugin>> {
     let mut plugins: Vec<Box<dyn Plugin>> = Vec::new();
-    match self::apps::Apps::init(&config) {
-        Ok(apps) => plugins.push(Box::new(apps)),
-        Err(e) => {
-            error!("{}", e);
+    let plugin_list = get_plugin_list(&config.file_options.plugins);
+    if plugin_list.is_empty() {
+        warn!(
+            "No plugins loading, launcher will do nothing. \
+                You probably want to enable some plugins in the config file."
+        )
+    }
+    for plugin_name in plugin_list {
+        match plugin_name.as_str() {
+            "apps" => match self::apps::Apps::init(&config) {
+                Ok(apps) => plugins.push(Box::new(apps)),
+                Err(e) => {
+                    error!("{}", e);
+                }
+            },
+            _ => error!("Unknown plugin: {}", plugin_name),
         }
     }
     plugins

@@ -33,10 +33,6 @@ pub struct Config {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct FileOptions {
-    // /// The list of directories to search for desktop entries in.
-    // pub app_paths: Vec<String>,
-    // /// Command to use to run terminal apps
-    // pub term_cmd: Option<String>,
     pub window_height: i32,
     pub window_width: i32,
     pub background_color: String,

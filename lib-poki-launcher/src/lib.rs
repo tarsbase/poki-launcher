@@ -100,6 +100,7 @@ impl PokiLauncher {
             let tx = event_tx.clone();
             plugin.register_event_handlers(&self.config, tx);
         }
+        std::mem::forget(event_tx);
         event_rx
     }
 }

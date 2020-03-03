@@ -1,51 +1,48 @@
 {
-    # Poki launcher config file
+  # Poki launcher config file
+  # Install config file to `~/.config/poki-launcher/poki-launcher.hjson`
+  # This example config file contains all of
+  # the config options of Poki Launcher.
+  # Options are set the their default vaules
+  # unless otherwise sepcified.
+  # Poki Launcher will use these default vaules
+  # for any options are not set or if not config
+  # file is installed
 
-    # Install config file to `~/.config/poki-launcher/poki-launcher.hjson`
+  # Set the command used to open terminal apps
+  # Will use `$TERM -e` by default
+  // term_cmd: "xterm -e"
+  # Change the default window size
+  window_height: 500
+  window_width: 500
+  # Change the colors of the UI elements
+  background_color: "#282a36"
+  border_color: "#2e303b"
+  input_box_color: "#44475a"
+  input_text_color: "#f8f8f2"
+  selected_app_color: "#44475a"
+  app_text_color: "#f8f8f2"
+  app_separator_color: "#bd93f9"
+  # Font size (pt) of the input box
+  input_font_size: 13
+  # Font size (pt) of app list
+  app_font_size: 20
+  # Percent of the app ui height taken up by the input box
+  # 0.1 = 10%
+  input_box_ratio: 0.1
 
-    # This example config file contains all of
-    # the config options of Poki Launcher.
-    # Options are set the their default vaules
-    # unless otherwise sepcified.
-    # Poki Launcher will use these default vaules
-    # for any options are not set or if not config
-    # file is installed
-
+  # Plugin settings
+  plugins: {
+    # Settings for the apps (app launcher) plugin
+	  apps: {
     # Locations to search apps
     # Will use "/usr/share/applications/" is not set
-    app_paths: [
-        # System apps
+      app_paths: [
         "/usr/share/applications/"
-        # User apps
-        ~/.local/share/applications/
-        # Snap apps
+        "~/.local/share/applications/"
         "/var/lib/snapd/desktop/applications"
-        # Flatpak apps
-        /var/lib/flatpak/exports/share/applications
-    ]
-
-    # Set the command used to open terminal apps
-    # Will use `$TERM -e` by default
-    // term_cmd: "xterm -e"
-
-    # Change the default window size
-    window_height: 500
-    window_width: 500
-
-    # Change the colors of the UI elements
-    background_color: "#282a36"
-    border_color: "#2e303b"
-    input_box_color: "#44475a"
-    input_text_color: "#f8f8f2"
-    selected_app_color: "#44475a"
-    app_text_color: "#f8f8f2"
-    app_separator_color: "#bd93f9"
-
-    # Font size (pt) of the input box
-    input_font_size: 13
-    # Font size (pt) of app list
-    app_font_size: 20
-    # Percent of the app ui height taken up by the input box
-    # 0.1 = 10%
-    input_box_ratio: 0.1
+        "/var/lib/flatpak/exports/share/applications"
+      ],
+    }
+  }
 }
