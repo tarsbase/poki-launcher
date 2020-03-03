@@ -74,8 +74,8 @@ impl App {
     ///
     /// Parse a list of desktop entries, separating successes from failures,
     /// then removing apps that shouldn't be displayed (None) from the successes.
-    /// ```no_run
-    /// use lib_poki_launcher::App;
+    /// ```ignore
+    /// use lib_poki_launcher::plugins::apps::App;
     /// use std::path::Path;
     ///
     /// let entries = vec![Path::new("./firefox.desktop"), Path::new("./chrome.desktop")];
