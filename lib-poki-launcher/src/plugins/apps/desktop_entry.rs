@@ -206,7 +206,7 @@ mod test {
     mod parse_desktop_file {
         #[test]
         fn vaild_file_exist() {
-            use crate::App;
+            use super::App;
             use std::fs::{remove_file, File};
             use std::io::prelude::*;
             use std::path::Path;

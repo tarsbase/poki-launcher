@@ -102,7 +102,7 @@ Rectangle {
 					anchors.fill: parent
 					anchors.topMargin: 1
 					anchors.bottomMargin: 1
-					color: (uuid == launcher.selected) ? launcher.selected_app_color : launcher.background_color
+					color: (id == launcher.selected) ? launcher.selected_app_color : launcher.background_color
 					RowLayout {
 						anchors.fill: parent
 
@@ -142,7 +142,7 @@ Rectangle {
 				MouseArea {
 					anchors.fill: parent
 					onClicked: {
-						launcher.selected = uuid
+						launcher.selected = id
 						run()
 					}
 				}

@@ -17,11 +17,10 @@
 
 mod ui;
 
-use crate::ui::{DB_PATH, SHOW_ON_START};
+use crate::ui::SHOW_ON_START;
 use cpp::*;
 use env_logger::Env;
 use human_panic::setup_panic;
-use lib_poki_launcher::prelude::*;
 use poki_launcher_notifier as notifier;
 use qmetaobject::*;
 use std::os::raw::c_void;
@@ -50,18 +49,18 @@ fn main() {
     let opt = Opt::from_args();
     SHOW_ON_START.with(|b| b.set(!opt.no_show));
     if opt.dump_db {
-        use std::fs::File;
+        // use std::fs::File;
 
-        if DB_PATH.exists() {
-            let mut file =
-                File::open(&*DB_PATH).expect("Failed to open db file");
-            let data: AppsDB =
-                rmp_serde::from_read(&mut file).expect("Failed to parse db");
-            println!("{}", serde_json::to_string_pretty(&data).unwrap());
-        } else {
-            eprintln!("Database file doesn't exit");
-            std::process::exit(1);
-        }
+        // if DB_PATH.exists() {
+        //     let mut file =
+        //         File::open(&*DB_PATH).expect("Failed to open db file");
+        //     let data: AppsDB =
+        //         rmp_serde::from_read(&mut file).expect("Failed to parse db");
+        //     println!("{}", serde_json::to_string_pretty(&data).unwrap());
+        // } else {
+        //     eprintln!("Database file doesn't exit");
+        //     std::process::exit(1);
+        // }
     } else if !opt.no_show {
         if notifier::is_running() {
             if let Err(e) = notifier::notify() {
@@ -83,7 +82,7 @@ cpp! {{
 fn start_ui() {
     let env = Env::new().filter("POKI_LOGGER");
     env_logger::init_from_env(env);
-    lazy_static::initialize(&ui::APPS);
+    lazy_static::initialize(&ui::LAUNCHER);
     // Install my logger into QT
     install_message_handler(logger);
     // Init ui res

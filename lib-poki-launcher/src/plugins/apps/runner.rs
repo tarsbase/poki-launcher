@@ -34,7 +34,7 @@ fn with_term<'a>(
     config: &Config,
     exec: &'a str,
 ) -> Result<(String, Vec<&'a str>)> {
-    let term = if let Some(term) = &config.term_cmd {
+    let term = if let Some(term) = &config.file_options.term_cmd {
         term.clone()
     } else {
         std::env::var("TERM").context(

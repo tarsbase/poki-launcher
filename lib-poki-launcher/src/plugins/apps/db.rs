@@ -19,7 +19,6 @@ use log::*;
 use std::cmp::Ordering;
 
 use super::App;
-use crate::config::Config;
 use anyhow::{Error, Result};
 use file_lock::FileLock;
 use fuzzy_matcher::skim::fuzzy_match;
@@ -41,21 +40,17 @@ pub struct AppsDB {
     reference_time: f64,
     /// The half life of the app launches
     half_life: f32,
-    // App config
-    #[serde(skip_serializing, skip_deserializing)]
-    pub config: Config,
 }
 
 #[allow(dead_code)]
 impl AppsDB {
     /// Create a new app.
-    pub fn new(config: Config, apps: Vec<App>) -> Self {
+    pub fn new(apps: Vec<App>) -> Self {
         AppsDB {
             apps,
             reference_time: current_time_secs(),
             // Half life of 3 days
             half_life: 60.0 * 60.0 * 24.0 * 3.0,
-            config,
         }
     }
 
@@ -64,15 +59,14 @@ impl AppsDB {
     /// # Arguments
     ///
     /// * `path` - Location of the database file
-    pub fn load(path: impl AsRef<Path>, config: Config) -> Result<AppsDB> {
+    pub fn load(path: impl AsRef<Path>) -> Result<AppsDB> {
         let path = path.as_ref().display().to_string();
         let lock = FileLock::lock(&path, true, false).map_err(|e| {
             Error::new(e).context(AppDBError::FileOpen(path.to_owned()))
         })?;
-        let mut apps: AppsDB = rmp::from_read(&lock.file).map_err(|e| {
+        let apps: AppsDB = rmp::from_read(&lock.file).map_err(|e| {
             Error::new(e).context(AppDBError::ParseDB(path.to_owned()))
         })?;
-        apps.config = config;
         Ok(apps)
     }
 
@@ -252,7 +246,7 @@ mod tests {
                 false,
             ),
         ];
-        let mut apps_db = AppsDB::new(Config::default(), apps.clone());
+        let mut apps_db = AppsDB::new(apps.clone());
         apps_db.merge_new_entries(apps.clone());
         assert_eq!(apps, apps_db.apps);
     }
@@ -273,7 +267,7 @@ mod tests {
                 false,
             ),
         ];
-        let mut apps_db = AppsDB::new(Config::default(), apps.clone());
+        let mut apps_db = AppsDB::new(apps.clone());
         apps.remove(0);
         apps_db.merge_new_entries(apps.clone());
         assert_eq!(apps, apps_db.apps);
@@ -287,7 +281,7 @@ mod tests {
             "/bin/test".to_owned(),
             false,
         )];
-        let mut apps_db = AppsDB::new(Config::default(), apps.clone());
+        let mut apps_db = AppsDB::new(apps.clone());
         apps.push(App::new(
             "Test2".to_owned(),
             "icon".to_owned(),

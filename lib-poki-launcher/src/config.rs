@@ -16,14 +16,22 @@
  */
 use crate::DIRS;
 use anyhow::Error;
+use directories::ProjectDirs;
 use serde_derive::{Deserialize, Serialize};
 use std::default::Default;
 use std::fs::create_dir;
+use std::path::PathBuf;
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub struct Config {
+    pub file_options: FileOptions,
+    pub data_dir: PathBuf,
+}
 
 /// User settings.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct Config {
+pub struct FileOptions {
     /// The list of directories to search for desktop entries in.
     pub app_paths: Vec<String>,
     /// Command to use to run terminal apps
@@ -44,9 +52,9 @@ pub struct Config {
     pub input_box_ratio: f32,
 }
 
-impl Default for Config {
+impl Default for FileOptions {
     fn default() -> Self {
-        Config {
+        FileOptions {
             app_paths: vec![
                 "/usr/share/applications".into(),
                 "~/.local/share/applications/".into(),
@@ -83,11 +91,19 @@ impl Config {
             create_dir(&config_dir)?;
         }
 
-        if file_path.as_path().exists() {
+        let file_options = if file_path.as_path().exists() {
             cfg.merge(config::File::with_name(file_path.to_str().unwrap()))?;
-            Ok(cfg.try_into()?)
+            cfg.try_into()?
         } else {
-            Ok(Self::default())
-        }
+            FileOptions::default()
+        };
+
+        let dirs =
+            ProjectDirs::from("info", "Ben Goldberg", "Poki-Launcher").unwrap();
+
+        Ok(Config {
+            file_options,
+            data_dir: dirs.data_dir().to_owned(),
+        })
     }
 }

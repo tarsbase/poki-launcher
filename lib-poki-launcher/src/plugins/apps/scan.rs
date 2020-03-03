@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
+use super::db::AppsDB;
+use super::desktop_entry::EntryParseError;
+use super::App;
 use crate::config::Config;
-use crate::db::AppsDB;
-use crate::desktop_entry::EntryParseError;
-use crate::App;
 use anyhow::Error;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -103,9 +103,10 @@ impl AppsDB {
     /// # Arguments
     ///
     /// * `paths` - A list of paths to desktop entries.
-    pub fn from_desktop_entries(config: Config) -> (AppsDB, Vec<Error>) {
-        let (apps, errors) = scan_desktop_entries(&config.app_paths);
-        (AppsDB::new(config, apps), errors)
+    pub fn from_desktop_entries(config: &Config) -> (AppsDB, Vec<Error>) {
+        let (apps, errors) =
+            scan_desktop_entries(&config.file_options.app_paths);
+        (AppsDB::new(apps), errors)
     }
 
     /// Update self with new desktop entries.
@@ -116,8 +117,9 @@ impl AppsDB {
     /// # Arguments
     ///
     /// * `paths` - A list of paths to desktop entries.
-    pub fn rescan_desktop_entries(&mut self) -> Vec<Error> {
-        let (apps, errors) = scan_desktop_entries(&self.config.app_paths);
+    pub fn rescan_desktop_entries(&mut self, config: &Config) -> Vec<Error> {
+        let (apps, errors) =
+            scan_desktop_entries(&config.file_options.app_paths);
         self.merge_new_entries(apps);
         errors
     }

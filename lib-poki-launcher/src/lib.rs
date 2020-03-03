@@ -16,30 +16,24 @@
  */
 /// Application configuration
 pub mod config;
-/// Interact with the app database
-pub mod db;
-/// Parse desktop entries
-pub mod desktop_entry;
-/// Run an app
-pub mod runner;
-/// Scan for desktop entries
-pub mod scan;
 
+pub mod plugins;
+
+use self::config::Config;
+use self::plugins::Plugin;
+use anyhow::{anyhow, Error, Result};
 use directories::{BaseDirs, ProjectDirs};
 use lazy_static::lazy_static;
-use serde_derive::{Deserialize, Serialize};
-use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
-use std::fmt;
+use log::error;
 use std::path::PathBuf;
-use uuid::Uuid;
 
 /// Things that you'll probably need in include when using this lib
 pub mod prelude {
     pub use crate::config::Config;
-    pub use crate::db::AppsDB;
-    pub use crate::scan::*;
-    pub use crate::App;
-    pub use crate::DIRS;
+    // pub use crate::db::AppsDB;
+    // pub use crate::scan::*;
+    // pub use crate::App;
+    // pub use crate::DIRS;
 }
 
 lazy_static! {
@@ -49,79 +43,64 @@ lazy_static! {
         BaseDirs::new().unwrap().home_dir().to_owned();
 }
 
-/// An app on your machine.
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct App {
-    /// Display name of the app.
-    pub name: String,
-    /// The exec string used to run the app.
-    pub(crate) exec: String,
-    /// Score of the app of the ranking algo.
-    score: f32,
-    /// Uuid used to uniquely identify this app.
-    /// This is saved to find the app later when the list changes.
-    pub uuid: String,
-    /// Icon name for this app.
-    /// The icon name has to be looked up in the system's icon
-    /// theme to get a file path.
-    pub icon: String,
-    /// If true, launch in terminal
-    pub(crate) terminal: bool,
+pub struct PokiLauncher {
+    pub config: Config,
+    plugins: Vec<Box<dyn Plugin>>,
+    selected_plugin: Option<usize>,
 }
 
-impl App {
-    /// Create a new app.
-    pub fn new(
-        name: String,
-        icon: String,
-        exec: String,
-        terminal: bool,
-    ) -> App {
-        App {
-            name,
-            icon,
-            exec,
-            uuid: Uuid::new_v4().to_string(),
-            score: 0.0,
-            terminal,
+impl PokiLauncher {
+    pub fn init() -> Result<PokiLauncher> {
+        let config = Config::load()?;
+        let plugins = self::plugins::init_plugins(&config);
+        Ok(PokiLauncher {
+            config,
+            plugins,
+            selected_plugin: None,
+        })
+    }
+
+    pub fn search(
+        &mut self,
+        input: &str,
+        num_items: usize,
+    ) -> Result<Vec<ListItem>> {
+        for (i, plugin) in self.plugins.iter().enumerate() {
+            if plugin.matcher(&self.config, &input) {
+                self.selected_plugin = Some(i);
+                return plugin.search(&self.config, &input, num_items);
+            }
+        }
+        Ok(vec![])
+    }
+
+    pub fn run(&mut self, id: &str) -> Result<()> {
+        let selected = self.selected_plugin.take();
+        match selected {
+            Some(selected) => self.plugins[selected].run(&self.config, &id),
+            None => Err(anyhow!("No app selected")),
         }
     }
 
-    /// Set this app's name, icon, and exec to the values of the other app.
-    pub fn merge(&mut self, other: &App) {
-        self.name = other.name.clone();
-        self.icon = other.icon.clone();
-        self.exec = other.exec.clone();
+    pub fn reload(&mut self) -> Result<()> {
+        for plugin in &mut self.plugins {
+            if let Err(e) = plugin.reload(&self.config) {
+                error!("{}", e);
+            }
+        }
+        Ok(())
     }
 }
 
-impl PartialEq for App {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-            && self.exec == other.exec
-            && self.icon == other.icon
-    }
+#[derive(Debug, Clone)]
+pub struct ListItem {
+    pub name: String,
+    pub icon: String,
+    pub id: String,
 }
 
-impl Eq for App {}
-
-impl Ord for App {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.name
-            .cmp(&other.name)
-            .then(self.exec.cmp(&other.exec))
-            .then(self.icon.cmp(&other.icon))
-    }
-}
-
-impl PartialOrd for App {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl fmt::Display for App {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.name)
+pub fn log_errs(errs: &[Error]) {
+    for err in errs {
+        error!("{}", err);
     }
 }
