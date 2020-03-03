@@ -18,6 +18,7 @@ use crate::DIRS;
 use anyhow::Error;
 use directories::ProjectDirs;
 use serde_derive::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::default::Default;
 use std::fs::create_dir;
 use std::path::PathBuf;
@@ -32,11 +33,10 @@ pub struct Config {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct FileOptions {
-    /// The list of directories to search for desktop entries in.
-    pub app_paths: Vec<String>,
-    /// Command to use to run terminal apps
-    pub term_cmd: Option<String>,
-
+    // /// The list of directories to search for desktop entries in.
+    // pub app_paths: Vec<String>,
+    // /// Command to use to run terminal apps
+    // pub term_cmd: Option<String>,
     pub window_height: i32,
     pub window_width: i32,
     pub background_color: String,
@@ -50,19 +50,20 @@ pub struct FileOptions {
     pub input_font_size: i32,
     pub app_font_size: i32,
     pub input_box_ratio: f32,
+
+    pub plugins: Value,
 }
 
 impl Default for FileOptions {
     fn default() -> Self {
         FileOptions {
-            app_paths: vec![
-                "/usr/share/applications".into(),
-                "~/.local/share/applications/".into(),
-                "/var/lib/snapd/desktop/applications".into(),
-                "/var/lib/flatpak/exports/share/applications".into(),
-            ],
-            term_cmd: None,
-
+            // app_paths: vec![
+            //     "/usr/share/applications".into(),
+            //     "~/.local/share/applications/".into(),
+            //     "/var/lib/snapd/desktop/applications".into(),
+            //     "/var/lib/flatpak/exports/share/applications".into(),
+            // ],
+            // term_cmd: None,
             window_height: 500,
             window_width: 500,
 
@@ -77,6 +78,17 @@ impl Default for FileOptions {
             input_font_size: 13,
             app_font_size: 20,
             input_box_ratio: 0.1,
+
+            plugins: json!({
+                "apps": {
+                    "app_paths": [
+                        "/usr/share/applications",
+                        "~/.local/share/applications/",
+                        "/var/lib/snapd/desktop/applications",
+                        "/var/lib/flatpak/exports/share/applications"
+                    ]
+                }
+            }),
         }
     }
 }

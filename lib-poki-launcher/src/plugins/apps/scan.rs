@@ -15,9 +15,7 @@
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
 use super::db::AppsDB;
-use super::desktop_entry::EntryParseError;
 use super::App;
-use crate::config::Config;
 use anyhow::Error;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -29,9 +27,6 @@ pub enum ScanError {
     /// Failed to scan the directory for some reason (ex. it doesn't exist).
     #[error("Failed to scan directory {dir} for desktop entries: {err}")]
     ScanDirectory { dir: String, err: Error },
-    /// Paring the entry failed.
-    #[error("Parse error: {err}")]
-    ParseEntry { err: EntryParseError },
     /// Path expansion failed.
     #[error("Failed to expand path {path}: {err}")]
     PathExpand { path: String, err: Error },
@@ -103,9 +98,10 @@ impl AppsDB {
     /// # Arguments
     ///
     /// * `paths` - A list of paths to desktop entries.
-    pub fn from_desktop_entries(config: &Config) -> (AppsDB, Vec<Error>) {
-        let (apps, errors) =
-            scan_desktop_entries(&config.file_options.app_paths);
+    pub fn from_desktop_entries(
+        app_paths: &Vec<String>,
+    ) -> (AppsDB, Vec<Error>) {
+        let (apps, errors) = scan_desktop_entries(app_paths);
         (AppsDB::new(apps), errors)
     }
 
@@ -117,9 +113,11 @@ impl AppsDB {
     /// # Arguments
     ///
     /// * `paths` - A list of paths to desktop entries.
-    pub fn rescan_desktop_entries(&mut self, config: &Config) -> Vec<Error> {
-        let (apps, errors) =
-            scan_desktop_entries(&config.file_options.app_paths);
+    pub fn rescan_desktop_entries(
+        &mut self,
+        app_paths: &Vec<String>,
+    ) -> Vec<Error> {
+        let (apps, errors) = scan_desktop_entries(app_paths);
         self.merge_new_entries(apps);
         errors
     }

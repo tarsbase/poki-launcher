@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
-use crate::config::Config;
 use anyhow::{Context as _, Error, Result};
 use log::debug;
 use nix::unistd::{getpid, setpgid};
@@ -31,10 +30,10 @@ fn parse_exec<'a>(exec: &'a str) -> (String, Vec<&'a str>) {
 }
 
 fn with_term<'a>(
-    config: &Config,
+    term_cmd: &Option<String>,
     exec: &'a str,
 ) -> Result<(String, Vec<&'a str>)> {
-    let term = if let Some(term) = &config.file_options.term_cmd {
+    let term = if let Some(term) = term_cmd {
         term.clone()
     } else {
         std::env::var("TERM").context(
@@ -52,10 +51,10 @@ fn with_term<'a>(
 
 impl App {
     /// Run the app.
-    pub fn run(&self, config: &Config) -> Result<()> {
+    pub fn run(&self, term_cmd: &Option<String>) -> Result<()> {
         debug!("Exec: `{}`", self.exec);
         let (cmd, args) = if self.terminal {
-            with_term(&config, &self.exec)?
+            with_term(&term_cmd, &self.exec)?
         } else {
             parse_exec(&self.exec)
         };

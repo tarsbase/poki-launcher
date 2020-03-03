@@ -1,9 +1,11 @@
 pub mod apps;
 
 use crate::config::Config;
+use crate::event::Event;
 use crate::ListItem;
 use anyhow::Result;
 use log::error;
+use std::sync::mpsc::Sender;
 
 pub fn init_plugins(config: &Config) -> Vec<Box<dyn Plugin>> {
     let mut plugins: Vec<Box<dyn Plugin>> = Vec::new();
@@ -29,5 +31,12 @@ pub trait Plugin: Send + Sync {
     #[allow(unused_variables)]
     fn reload(&mut self, config: &Config) -> Result<()> {
         Ok(())
+    }
+    #[allow(unused_variables)]
+    fn register_event_handlers(
+        &mut self,
+        config: &Config,
+        event_tx: Sender<Event>,
+    ) {
     }
 }

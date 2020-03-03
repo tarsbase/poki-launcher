@@ -36,9 +36,6 @@ pub enum EntryParseError {
     /// Desktop file is missing the 'Exec' parameter.
     #[error("Desktop file {file} is missing the 'Exec' parameter")]
     MissingExec { file: String },
-    /// Desktop file is missing the 'Icon' parameter.
-    #[error("Desktop file {file} is missing the 'Icon' parameter")]
-    MissingIcon { file: String },
     #[error("In entry {file} property {name} has an invalid value {value}")]
     /// A property had an invalid value.
     /// This is returned if NoDisplay or Hidden are set ti a value that isn't

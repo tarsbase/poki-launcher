@@ -11,28 +11,53 @@ use self::db::AppsDB;
 use super::ListItem;
 use super::Plugin;
 use crate::config::Config;
-use anyhow::Result;
-use log::{debug, error};
+use crate::event::Event;
+use anyhow::{anyhow, Error, Result};
+use log::{debug, error, trace, warn};
+use notify::{watcher, RecursiveMode, Watcher};
 use serde_derive::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use std::default::Default;
 use std::fmt;
+use std::path::Path;
 use std::path::PathBuf;
+use std::sync::mpsc::{self, Sender};
+use std::thread;
+use std::time::Duration;
 use uuid::Uuid;
 
 pub struct Apps {
     db: AppsDB,
     db_path: PathBuf,
+    app_paths: Vec<String>,
+    term_cmd: Option<String>,
 }
 
 impl Apps {
     pub fn init(config: &Config) -> Result<Self> {
         let db_path = config.data_dir.join("apps.db");
+        let app_paths = match get_app_paths(&config.file_options.plugins) {
+            Ok(app_paths) => app_paths,
+            Err(_) => vec![
+                "/usr/share/applications".into(),
+                "~/.local/share/applications/".into(),
+                "/var/lib/snapd/desktop/applications".into(),
+                "/var/lib/flatpak/exports/share/applications".into(),
+            ],
+        };
+        if app_paths.is_empty() {
+            warn!("The list of search paths for apps is empty so none will be found");
+        }
+        let term_cmd = get_term_cmd(&config.file_options.plugins).ok();
         let db = if db_path.as_path().exists() {
             debug!("Loading db from: {}", db_path.display());
             AppsDB::load(&db_path)?
         } else {
-            let (apps_db, errors) = AppsDB::from_desktop_entries(&config);
+            trace!("Creating new apps.db");
+            trace!("{:#?}", app_paths);
+            let (apps_db, errors) = AppsDB::from_desktop_entries(&app_paths);
+            trace!("{:#?}", apps_db);
             crate::log_errs(&errors);
             // TODO visual error indicator
             if let Err(e) = apps_db.save(&db_path) {
@@ -40,8 +65,44 @@ impl Apps {
             }
             apps_db
         };
-        Ok(Apps { db, db_path })
+
+        Ok(Apps {
+            db,
+            db_path,
+            app_paths,
+            term_cmd,
+        })
     }
+}
+
+fn get_apps_config(plugins: &Value) -> Result<&Map<String, Value>> {
+    Ok(plugins
+        .as_object()
+        .ok_or(anyhow!(""))?
+        .get("apps")
+        .ok_or(anyhow!(""))?
+        .as_object()
+        .ok_or(anyhow!(""))?)
+}
+
+fn get_app_paths(plugins: &Value) -> Result<Vec<String>> {
+    Ok(get_apps_config(plugins)?
+        .get("app_paths")
+        .ok_or(anyhow!(""))?
+        .as_array()
+        .ok_or(anyhow!(""))?
+        .into_iter()
+        .filter_map(|item| item.as_str().map(|s| s.to_owned()))
+        .collect())
+}
+
+fn get_term_cmd(plugins: &Value) -> Result<String> {
+    Ok(get_apps_config(plugins)?
+        .get("term_cmd")
+        .ok_or(anyhow!(""))?
+        .as_str()
+        .ok_or(anyhow!(""))?
+        .to_owned())
 }
 
 impl Plugin for Apps {
@@ -63,7 +124,7 @@ impl Plugin for Apps {
             .collect())
     }
 
-    fn run(&mut self, config: &Config, uuid: &str) -> Result<()> {
+    fn run(&mut self, _: &Config, uuid: &str) -> Result<()> {
         let app = self
             .db
             .apps
@@ -71,19 +132,77 @@ impl Plugin for Apps {
             .find(|app| app.uuid == uuid)
             .unwrap()
             .clone();
-        app.run(&config)?;
+        app.run(&self.term_cmd)?;
         self.db.update(&app);
         self.db.save(&self.db_path)?;
         Ok(())
     }
 
-    fn reload(&mut self, config: &Config) -> Result<()> {
-        let (app_list, errors) =
-            self::scan::scan_desktop_entries(&config.file_options.app_paths);
+    fn reload(&mut self, _: &Config) -> Result<()> {
+        let errors = self.db.rescan_desktop_entries(&self.app_paths);
         crate::log_errs(&errors);
-        self.db.merge_new_entries(app_list);
         self.db.save(&self.db_path)?;
         Ok(())
+    }
+
+    fn register_event_handlers(
+        &mut self,
+        _config: &Config,
+        event_tx: Sender<Event>,
+    ) {
+        let (tx, rx) = mpsc::channel();
+        let mut watcher = match watcher(tx, Duration::from_secs(10)) {
+            Ok(watcher) => watcher,
+            Err(e) => {
+                error!(
+                    "{}",
+                    Error::new(e).context("Error creating file system watcher")
+                );
+                return;
+            }
+        };
+        for path in &self.app_paths {
+            let expanded = match shellexpand::full(&path) {
+                Ok(path) => path.into_owned(),
+                Err(e) => {
+                    error!(
+                        "{}",
+                        Error::new(e).context(format!(
+                            "Error expanding desktop files dir path {}",
+                            path
+                        ))
+                    );
+                    continue;
+                }
+            };
+            let path = Path::new(&expanded);
+            if path.exists() {
+                if let Err(e) = watcher.watch(path, RecursiveMode::Recursive) {
+                    warn!(
+                        "{}",
+                        Error::new(e).context(format!(
+                            "Error setting watcher for dir {}",
+                            expanded
+                        ))
+                    );
+                }
+            }
+        }
+        std::mem::forget(watcher);
+        thread::spawn(move || loop {
+            match rx.recv() {
+                Ok(event) => {
+                    debug!("Desktop file watcher received {:?}", event);
+                    if let Err(e) = event_tx.send(Event::Reload) {
+                        error!("Error sending event to ui: {}", e);
+                    }
+                }
+                Err(e) => {
+                    error!("Desktop file watcher error {}", e);
+                    return;
+                }
+            }
+        });
     }
 }
 

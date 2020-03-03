@@ -17,15 +17,18 @@
 /// Application configuration
 pub mod config;
 
-pub mod plugins;
+pub mod event;
+mod plugins;
 
 use self::config::Config;
+use self::event::Event;
 use self::plugins::Plugin;
 use anyhow::{anyhow, Error, Result};
 use directories::{BaseDirs, ProjectDirs};
 use lazy_static::lazy_static;
 use log::error;
 use std::path::PathBuf;
+use std::sync::mpsc::{self, Receiver};
 
 /// Things that you'll probably need in include when using this lib
 pub mod prelude {
@@ -89,6 +92,15 @@ impl PokiLauncher {
             }
         }
         Ok(())
+    }
+
+    pub fn register_event_handlers(&mut self) -> Receiver<Event> {
+        let (event_tx, event_rx) = mpsc::channel();
+        for plugin in &mut self.plugins {
+            let tx = event_tx.clone();
+            plugin.register_event_handlers(&self.config, tx);
+        }
+        event_rx
     }
 }
 

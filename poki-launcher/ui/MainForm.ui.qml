@@ -29,9 +29,9 @@ Rectangle {
 		launcher.hide();
 	}
 
-	function scan() {
-		window.title = qsTr("Poki Launcher - Scanning...");
-		launcher.scan();
+	function load() {
+		window.title = qsTr("Poki Launcher - Loading...");
+		launcher.load();
 		window.title = qsTr("Poki Launcher");
 		launcher.search(input.text)
 	}
@@ -43,7 +43,7 @@ Rectangle {
 
 	Shortcut {
 		sequence: "F5"
-		onActivated: scan()
+		onActivated: load()
 	}
 
     ColumnLayout {
@@ -75,8 +75,8 @@ Rectangle {
 			}
 
 			BusyIndicator {
-				id: scan_ind
-				running: launcher.scanning
+				id: load_ind
+				running: launcher.loading
 				anchors.right: input_box.right
 				anchors.verticalCenter: input_box.verticalCenter
 				anchors.rightMargin: input_box.height * 0.1

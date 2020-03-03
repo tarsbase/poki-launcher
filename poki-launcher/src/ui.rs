@@ -17,18 +17,14 @@
 use anyhow::Error;
 use cstr::*;
 use lazy_static::lazy_static;
-use lib_poki_launcher::{ListItem, PokiLauncher as Launcher};
+use lib_poki_launcher::{event::Event, ListItem, PokiLauncher as Launcher};
 use log::{debug, error, trace, warn};
-use notify::{watcher, RecursiveMode, Watcher};
 use poki_launcher_notifier::{self as notifier, Notifier};
 use qmetaobject::*;
 use std::cell::{Cell, RefCell};
 use std::convert::From;
-use std::path::Path;
-use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
 
 const MAX_APPS_SHOWN: usize = 5;
 
@@ -55,7 +51,7 @@ struct PokiLauncher {
     model: qt_property!(RefCell<SimpleListModel<QListItem>>; NOTIFY model_changed),
     selected: qt_property!(QString; NOTIFY selected_changed WRITE set_selected),
     visible: qt_property!(bool; NOTIFY visible_changed),
-    scanning: qt_property!(bool; NOTIFY scanning_changed),
+    loading: qt_property!(bool; NOTIFY loading_changed),
     has_moved: qt_property!(bool),
 
     window_height: qt_property!(i32; NOTIFY settings_changed),
@@ -75,7 +71,7 @@ struct PokiLauncher {
 
     init: qt_method!(fn(&mut self)),
     search: qt_method!(fn(&mut self, text: String)),
-    scan: qt_method!(fn(&mut self)),
+    load: qt_method!(fn(&mut self)),
     down: qt_method!(fn(&mut self)),
     up: qt_method!(fn(&mut self)),
     run: qt_method!(fn(&mut self)),
@@ -84,16 +80,16 @@ struct PokiLauncher {
 
     selected_changed: qt_signal!(),
     visible_changed: qt_signal!(),
-    scanning_changed: qt_signal!(),
+    loading_changed: qt_signal!(),
     model_changed: qt_signal!(),
     settings_changed: qt_signal!(),
 }
 
 impl PokiLauncher {
     fn init(&mut self) {
-        self.scan();
+        self.load();
 
-        let launcher = LAUNCHER.lock().expect("Mutex poisoned");
+        let mut launcher = LAUNCHER.lock().expect("Mutex poisoned");
         self.window_height = launcher.config.file_options.window_height;
         self.window_width = launcher.config.file_options.window_width;
 
@@ -167,70 +163,22 @@ impl PokiLauncher {
 
         // Setup desktop file change notifier and callback
         let qptr = QPointer::from(&*self);
-        let rescan = qmetaobject::queued_callback(move |()| {
+        let reload = qmetaobject::queued_callback(move |()| {
             qptr.as_pinned().map(|self_| {
-                self_.borrow_mut().scan();
+                self_.borrow_mut().load();
             });
         });
-        thread::spawn(move || {
-            let (tx, rx) = mpsc::channel();
-            let mut watcher = match watcher(tx, Duration::from_secs(10)) {
-                Ok(watcher) => watcher,
+        let event_rx = launcher.register_event_handlers();
+        thread::spawn(move || loop {
+            match event_rx.recv() {
+                Ok(event) => {
+                    debug!("Received event {:?}", event);
+                    match event {
+                        Event::Reload => reload(()),
+                    }
+                }
                 Err(e) => {
-                    error!(
-                        "{}",
-                        Error::new(e)
-                            .context("Error creating file system watcher")
-                    );
-                    return;
-                }
-            };
-
-            for path in &LAUNCHER
-                .lock()
-                .expect("Apps Mutex Poisoned")
-                .config
-                .file_options
-                .app_paths
-            {
-                let expanded = match shellexpand::full(&path) {
-                    Ok(path) => path.into_owned(),
-                    Err(e) => {
-                        error!(
-                            "{}",
-                            Error::new(e).context(format!(
-                                "Error expanding desktop files dir path {}",
-                                path
-                            ))
-                        );
-                        continue;
-                    }
-                };
-                let path = Path::new(&expanded);
-                if path.exists() {
-                    if let Err(e) =
-                        watcher.watch(path, RecursiveMode::Recursive)
-                    {
-                        warn!(
-                            "{}",
-                            Error::new(e).context(format!(
-                                "Error setting watcher for dir {}",
-                                expanded
-                            ))
-                        );
-                    }
-                }
-            }
-            loop {
-                match rx.recv() {
-                    Ok(event) => {
-                        debug!("Desktop file watcher received {:?}", event);
-                        rescan(());
-                    }
-                    Err(e) => {
-                        debug!("Desktop file watcher error {}", e);
-                        return;
-                    }
+                    error!("{}", e);
                 }
             }
         });
@@ -271,24 +219,25 @@ impl PokiLauncher {
         );
     }
 
-    fn scan(&mut self) {
-        trace!("Scanning...");
-        self.scanning = true;
-        self.scanning_changed();
+    fn load(&mut self) {
+        trace!("Loading...");
+        self.loading = true;
+        self.loading_changed();
         let qptr = QPointer::from(&*self);
         let done = qmetaobject::queued_callback(move |()| {
             qptr.as_pinned().map(|self_| {
-                self_.borrow_mut().scanning = false;
-                self_.borrow().scanning_changed();
+                self_.borrow_mut().loading = false;
+                self_.borrow().loading_changed();
             });
         });
         thread::spawn(move || {
-            let mut launcher = LAUNCHER.lock().expect("Apps Mutex Poisoned");
+            let mut launcher =
+                LAUNCHER.lock().expect("Launcher Mutex Poisoned");
             if let Err(e) = launcher.reload() {
                 error!("{}", e);
             }
             done(());
-            trace!("Scanning...done");
+            trace!("Loading...done");
         });
     }
 
