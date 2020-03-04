@@ -18,6 +18,7 @@
 pub mod config;
 
 pub mod event;
+mod frecency_db;
 mod plugins;
 
 use self::config::Config;
@@ -26,7 +27,7 @@ use self::plugins::Plugin;
 use anyhow::{anyhow, Error, Result};
 use directories::{BaseDirs, ProjectDirs};
 use lazy_static::lazy_static;
-use log::error;
+use log::{debug, error};
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver};
 
@@ -71,6 +72,7 @@ impl PokiLauncher {
         for (i, plugin) in self.plugins.iter().enumerate() {
             if plugin.matcher(&self.config, &input) {
                 self.selected_plugin = Some(i);
+                debug!("Selecting plugin {}", i);
                 return plugin.search(&self.config, &input, num_items);
             }
         }

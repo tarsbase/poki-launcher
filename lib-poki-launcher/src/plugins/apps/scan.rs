@@ -14,8 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
-use super::db::AppsDB;
-use super::App;
+use super::{App, AppsDB};
 use anyhow::Error;
 use std::path::PathBuf;
 use thiserror::Error;

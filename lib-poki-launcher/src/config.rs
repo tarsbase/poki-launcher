@@ -47,6 +47,7 @@ pub struct FileOptions {
     pub app_font_size: i32,
     pub input_box_ratio: f32,
 
+    pub plugin_load_order: Vec<String>,
     pub plugins: Value,
 }
 
@@ -75,6 +76,7 @@ impl Default for FileOptions {
             app_font_size: 20,
             input_box_ratio: 0.1,
 
+            plugin_load_order: vec!["apps".into()],
             plugins: json!({
                 "apps": {
                     "app_paths": [

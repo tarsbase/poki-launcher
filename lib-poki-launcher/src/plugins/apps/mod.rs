@@ -1,5 +1,3 @@
-/// Interact with the app database
-pub mod db;
 /// Parse desktop entries
 pub mod desktop_entry;
 /// Run an app
@@ -7,11 +5,11 @@ pub mod runner;
 /// Scan for desktop entries
 pub mod scan;
 
-use self::db::AppsDB;
 use super::ListItem;
 use super::Plugin;
 use crate::config::Config;
 use crate::event::Event;
+use crate::frecency_db::*;
 use anyhow::{anyhow, Error, Result};
 use log::{debug, error, trace, warn};
 use notify::{watcher, RecursiveMode, Watcher};
@@ -57,7 +55,6 @@ impl Apps {
             trace!("Creating new apps.db");
             trace!("{:#?}", app_paths);
             let (apps_db, errors) = AppsDB::from_desktop_entries(&app_paths);
-            trace!("{:#?}", apps_db);
             crate::log_errs(&errors);
             // TODO visual error indicator
             if let Err(e) = apps_db.save(&db_path) {
@@ -125,15 +122,14 @@ impl Plugin for Apps {
     }
 
     fn run(&mut self, _: &Config, uuid: &str) -> Result<()> {
-        let app = self
+        let item = self
             .db
-            .apps
             .iter()
-            .find(|app| app.uuid == uuid)
+            .find(|item| item.item.uuid == uuid)
             .unwrap()
             .clone();
-        app.run(&self.term_cmd)?;
-        self.db.update(&app);
+        item.item.run(&self.term_cmd)?;
+        self.db.update(&item);
         self.db.save(&self.db_path)?;
         Ok(())
     }
@@ -206,12 +202,12 @@ impl Plugin for Apps {
     }
 }
 
-impl From<App> for ListItem {
-    fn from(app: App) -> Self {
+impl From<&Item<App>> for ListItem {
+    fn from(item: &Item<App>) -> Self {
         Self {
-            name: app.name,
-            icon: app.icon,
-            id: app.uuid,
+            name: item.item.name.clone(),
+            icon: item.item.icon.clone(),
+            id: item.item.uuid.clone(),
         }
     }
 }
@@ -290,5 +286,13 @@ impl PartialOrd for App {
 impl fmt::Display for App {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.name)
+    }
+}
+
+pub type AppsDB = FrecencyDB<App>;
+
+impl DBItem for App {
+    fn get_sort_string(&self) -> &str {
+        self.name.as_str()
     }
 }
