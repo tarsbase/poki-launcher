@@ -18,12 +18,10 @@ use serde_json::{Map, Value};
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use std::default::Default;
 use std::fmt;
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Sender};
 use std::thread;
 use std::time::Duration;
-use uuid::Uuid;
 
 pub struct Apps {
     db: AppsDB,
@@ -125,7 +123,7 @@ impl Plugin for Apps {
         let item = self
             .db
             .iter()
-            .find(|item| item.item.uuid == uuid)
+            .find(|item| item.uuid == uuid)
             .unwrap()
             .clone();
         item.item.run(&self.term_cmd)?;
@@ -207,23 +205,18 @@ impl From<&Item<App>> for ListItem {
         Self {
             name: item.item.name.clone(),
             icon: item.item.icon.clone(),
-            id: item.item.uuid.clone(),
+            id: item.uuid.clone(),
         }
     }
 }
 
 /// An app on your machine.
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, Eq)]
 pub struct App {
     /// Display name of the app.
     pub name: String,
     /// The exec string used to run the app.
     pub(crate) exec: String,
-    /// Score of the app of the ranking algo.
-    score: f32,
-    /// Uuid used to uniquely identify this app.
-    /// This is saved to find the app later when the list changes.
-    pub uuid: String,
     /// Icon name for this app.
     /// The icon name has to be looked up in the system's icon
     /// theme to get a file path.
@@ -244,8 +237,6 @@ impl App {
             name,
             icon,
             exec,
-            uuid: Uuid::new_v4().to_string(),
-            score: 0.0,
             terminal,
         }
     }
@@ -265,8 +256,6 @@ impl PartialEq for App {
             && self.icon == other.icon
     }
 }
-
-impl Eq for App {}
 
 impl Ord for App {
     fn cmp(&self, other: &Self) -> Ordering {

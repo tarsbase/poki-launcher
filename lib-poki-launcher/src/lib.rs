@@ -20,6 +20,7 @@ pub mod config;
 pub mod event;
 mod frecency_db;
 mod plugins;
+mod run;
 
 use self::config::Config;
 use self::event::Event;

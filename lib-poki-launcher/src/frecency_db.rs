@@ -49,7 +49,7 @@ pub struct FrecencyDB<T: Debug + Clone + Serialize + DBItem + PartialEq> {
 pub struct Item<T: Debug + Clone + Serialize + DBItem + PartialEq> {
     pub item: T,
     score: f32,
-    uuid: String,
+    pub uuid: String,
 }
 
 struct Container<'a, T: Debug + Clone + Serialize + DBItem + PartialEq> {

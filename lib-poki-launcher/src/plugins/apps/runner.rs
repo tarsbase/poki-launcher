@@ -14,20 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
-use anyhow::{Context as _, Error, Result};
+use crate::run::*;
+use anyhow::{Context as _, Result};
 use log::debug;
-use nix::unistd::{getpid, setpgid};
-use std::os::unix::process::CommandExt as _;
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 use super::App;
-
-fn parse_exec<'a>(exec: &'a str) -> (String, Vec<&'a str>) {
-    let mut iter = exec.split(' ');
-    let cmd = iter.next().expect("Empty Exec").to_owned();
-    let args = iter.collect();
-    (cmd, args)
-}
 
 fn with_term<'a>(
     term_cmd: &'a Option<String>,
@@ -59,30 +51,12 @@ impl App {
         let (cmd, args) = if self.terminal {
             with_term(&term_cmd, &self.exec)?
         } else {
-            parse_exec(&self.exec)
+            parse_command_string(&self.exec)
         };
         debug!("Running `{} {}`", cmd, args.join(" "));
         let mut command = Command::new(&cmd);
-        command
-            .args(&args)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
-        unsafe {
-            command.pre_exec(|| {
-                let pid = getpid();
-                if let Err(e) = setpgid(pid, pid) {
-                    log::error!(
-                        "{:?}",
-                        Error::new(e).context(format!(
-                            "Failed to set pgid of child process with pid {}",
-                            pid
-                        ))
-                    );
-                }
-                Ok(())
-            });
-        }
-        let _child = command.spawn().with_context(|| {
+        command.args(&args);
+        let _ = run_bg(command).with_context(|| {
             format!(
                 "Execution failed with Exec line: `{}` `{}`.\n\
             If I'm trying to start your terminal emulator with \

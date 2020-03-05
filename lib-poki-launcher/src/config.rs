@@ -27,6 +27,7 @@ use std::path::PathBuf;
 pub struct Config {
     pub file_options: FileOptions,
     pub data_dir: PathBuf,
+    pub user_home: PathBuf,
 }
 
 /// User settings.
@@ -54,13 +55,6 @@ pub struct FileOptions {
 impl Default for FileOptions {
     fn default() -> Self {
         FileOptions {
-            // app_paths: vec![
-            //     "/usr/share/applications".into(),
-            //     "~/.local/share/applications/".into(),
-            //     "/var/lib/snapd/desktop/applications".into(),
-            //     "/var/lib/flatpak/exports/share/applications".into(),
-            // ],
-            // term_cmd: None,
             window_height: 500,
             window_width: 500,
 
@@ -108,12 +102,16 @@ impl Config {
             FileOptions::default()
         };
 
-        let dirs =
-            ProjectDirs::from("info", "Ben Goldberg", "Poki-Launcher").unwrap();
+        let dirs = ProjectDirs::from("info", "Ben Goldberg", "Poki-Launcher")
+            .expect("Couldn't find home dir");
 
         Ok(Config {
             file_options,
             data_dir: dirs.data_dir().to_owned(),
+            user_home: directories::BaseDirs::new()
+                .expect("Couldn't find home dir")
+                .home_dir()
+                .to_owned(),
         })
     }
 }
