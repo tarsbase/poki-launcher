@@ -11,10 +11,11 @@ use std::cmp::PartialEq;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::Mutex;
 use walkdir::{DirEntry, WalkDir};
 
 pub struct Files {
-    db: FilesDB,
+    db: Mutex<FilesDB>,
     db_path: PathBuf,
 }
 
@@ -22,18 +23,7 @@ impl Files {
     pub fn init(config: &Config) -> Result<Self> {
         let db_path = config.data_dir.join("files.db");
 
-        let db = if db_path.as_path().exists() {
-            debug!("Loading db from: {}", db_path.display());
-            FilesDB::load(&db_path)?
-        } else {
-            trace!("Creating new files.db");
-            let files_db = FilesDB::new(vec![]);
-            // TODO visual error indicator
-            if let Err(e) = files_db.save(&db_path) {
-                error!("{:?}", e);
-            }
-            files_db
-        };
+        let db = Mutex::new(FilesDB::new(&db_path)?);
         Ok(Files { db, db_path })
     }
 }
@@ -45,31 +35,36 @@ impl Plugin for Files {
             _ => false,
         }
     }
+
     fn search(
         &self,
         _: &Config,
         input: &str,
         num_items: usize,
     ) -> Result<Vec<crate::ListItem>> {
-        trace!("Files search");
+        trace!("Files search {:?} {:?}", input, num_items);
         let list: Vec<_> = self
             .db
-            .get_ranked_list(input, Some(num_items))
+            .lock()
+            .unwrap()
+            .get_ranked_list(&input[1..], Some(num_items))?
             .into_iter()
             .map(ListItem::from)
             .collect();
         Ok(list)
     }
-    fn run(&mut self, _config: &Config, id: &str) -> Result<()> {
-        let item = self.db.iter().find(|item| item.uuid == id).unwrap().clone();
-        item.item.open()?;
-        self.db.update(&item);
-        self.db.save(&self.db_path)?;
+
+    fn run(&mut self, _config: &Config, id: u64) -> Result<()> {
+        let mut db = self.db.lock().unwrap();
+        let cont = db.get_by_id(id)?.unwrap();
+        cont.item.open()?;
+        db.update_score(cont.id)?;
         Ok(())
     }
-    fn reload(&mut self, config: &Config) -> Result<()> {
+
+    fn reload(&mut self, _config: &Config) -> Result<()> {
         let (entries, errors): (Vec<_>, Vec<_>) =
-            WalkDir::new(&config.user_home)
+            WalkDir::new("/home/zethra/Documents")
                 .into_iter()
                 .filter_entry(|e| !is_hidden(e))
                 .partition(Result::is_ok);
@@ -90,9 +85,8 @@ impl Plugin for Files {
 
         debug!("Found {} files", files.len());
         // debug!("{:#?}", files);
-        self.db.merge_new_entries(files);
-        trace!("Saving");
-        self.db.save(&self.db_path)?;
+        self.db.lock().unwrap().merge_new_entries(&files)?;
+        debug!("Done writing");
         Ok(())
     }
 }
@@ -142,12 +136,12 @@ impl Hash for File {
 
 type FilesDB = FrecencyDB<File>;
 
-impl From<&Item<File>> for ListItem {
-    fn from(item: &Item<File>) -> Self {
+impl From<Container<File>> for ListItem {
+    fn from(cont: Container<File>) -> Self {
         Self {
-            name: item.item.name.clone(),
+            name: cont.item.name.clone(),
             icon: "".to_owned(),
-            id: item.uuid.clone(),
+            id: cont.id,
         }
     }
 }

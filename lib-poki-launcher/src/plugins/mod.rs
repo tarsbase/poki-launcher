@@ -1,4 +1,4 @@
-mod apps;
+// mod apps;
 mod files;
 
 use crate::config::Config;
@@ -18,15 +18,15 @@ pub fn init_plugins(config: &Config) -> Vec<Box<dyn Plugin>> {
     }
     for plugin_name in &config.file_options.plugin_load_order {
         match plugin_name.as_str() {
-            "apps" => match self::apps::Apps::init(&config) {
-                Ok(apps) => {
-                    info!("Loading plugin: `apps`");
-                    plugins.push(Box::new(apps))
-                }
-                Err(e) => {
-                    error!("{:?}", e);
-                }
-            },
+            // "apps" => match self::apps::Apps::init(&config) {
+            //     Ok(apps) => {
+            //         info!("Loading plugin: `apps`");
+            //         plugins.push(Box::new(apps))
+            //     }
+            //     Err(e) => {
+            //         error!("{:?}", e);
+            //     }
+            // },
             "files" => match self::files::Files::init(&config) {
                 Ok(apps) => {
                     info!("Loading plugin: `files`");
@@ -51,7 +51,7 @@ pub trait Plugin: Send + Sync {
         input: &str,
         num_items: usize,
     ) -> Result<Vec<ListItem>>;
-    fn run(&mut self, config: &Config, id: &str) -> Result<()>;
+    fn run(&mut self, config: &Config, id: u64) -> Result<()>;
     #[allow(unused_variables)]
     fn reload(&mut self, config: &Config) -> Result<()> {
         Ok(())

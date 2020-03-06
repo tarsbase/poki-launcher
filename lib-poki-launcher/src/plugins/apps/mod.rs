@@ -18,13 +18,15 @@ use serde_json::{Map, Value};
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use std::default::Default;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Sender};
+use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
 pub struct Apps {
-    db: AppsDB,
+    db: Mutex<AppsDB>,
     db_path: PathBuf,
     app_paths: Vec<String>,
     term_cmd: Option<String>,
@@ -46,20 +48,21 @@ impl Apps {
             warn!("The list of search paths for apps is empty so none will be found");
         }
         let term_cmd = get_term_cmd(&config.file_options.plugins).ok();
-        let db = if db_path.as_path().exists() {
-            debug!("Loading db from: {}", db_path.display());
-            AppsDB::load(&db_path)?
-        } else {
-            trace!("Creating new apps.db");
-            trace!("{:#?}", app_paths);
-            let (apps_db, errors) = AppsDB::from_desktop_entries(&app_paths);
-            crate::log_errs(&errors);
-            // TODO visual error indicator
-            if let Err(e) = apps_db.save(&db_path) {
-                error!("{:?}", e);
-            }
-            apps_db
-        };
+        let db = Mutex::new(AppsDB::new(&db_path)?);
+        // let db = if db_path.as_path().exists() {
+        //     debug!("Loading db from: {}", db_path.display());
+        //     AppsDB::load(&db_path)?
+        // } else {
+        //     trace!("Creating new apps.db");
+        //     trace!("{:#?}", app_paths);
+        //     let (apps_db, errors) = AppsDB::from_desktop_entries(&app_paths);
+        //     crate::log_errs(&errors);
+        //     // TODO visual error indicator
+        //     if let Err(e) = apps_db.save(&db_path) {
+        //         error!("{:?}", e);
+        //     }
+        //     apps_db
+        // };
 
         Ok(Apps {
             db,
@@ -111,8 +114,8 @@ impl Plugin for Apps {
         input: &str,
         num_items: usize,
     ) -> Result<Vec<ListItem>> {
-        Ok(self
-            .db
+        let db = self.db.lock().unwrap();
+        Ok(db
             .get_ranked_list(input, Some(num_items))
             .into_iter()
             .map(ListItem::from)
@@ -200,15 +203,15 @@ impl Plugin for Apps {
     }
 }
 
-impl From<&Item<App>> for ListItem {
-    fn from(item: &Item<App>) -> Self {
-        Self {
-            name: item.item.name.clone(),
-            icon: item.item.icon.clone(),
-            id: item.uuid.clone(),
-        }
-    }
-}
+// impl From<&Item<App>> for ListItem {
+//     fn from(item: &Item<App>) -> Self {
+//         Self {
+//             name: item.item.name.clone(),
+//             icon: item.item.icon.clone(),
+//             id: item.uuid.clone(),
+//         }
+//     }
+// }
 
 /// An app on your machine.
 #[derive(Debug, Default, Clone, Serialize, Deserialize, Eq)]
@@ -279,6 +282,14 @@ impl fmt::Display for App {
 }
 
 pub type AppsDB = FrecencyDB<App>;
+
+impl Hash for App {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.name.hash(hasher);
+        self.exec.hash(hasher);
+        self.icon.hash(hasher);
+    }
+}
 
 impl DBItem for App {
     fn get_sort_string(&self) -> &str {

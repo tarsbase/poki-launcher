@@ -16,117 +16,170 @@
  */
 
 use log::*;
-use std::cmp::PartialEq;
 
 use anyhow::{Error, Result};
-use file_lock::FileLock;
 use fuzzy_matcher::skim::fuzzy_match;
 use rmp_serde as rmp;
 // use serde_derive::{Deserialize, Serialize};
-use serde::{de, Deserialize, Serialize};
+use rusqlite::{params, Connection, OptionalExtension, NO_PARAMS};
+use serde::{de, Serialize};
+use std::collections::hash_map::DefaultHasher;
 use std::fmt::Debug;
-use std::fs::File;
-use std::io::Write as _;
+use std::hash::Hash;
+use std::hash::Hasher;
+use std::marker::PhantomData;
 use std::path::Path;
 use std::process;
-use std::slice::Iter;
 use std::time::SystemTime;
 use thiserror::Error;
-use uuid::Uuid;
 
 /// An apps database.
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct FrecencyDB<T: Debug + Clone + Serialize + DBItem + PartialEq> {
+#[derive(Debug)]
+pub struct FrecencyDB<T: DBItem> {
     /// The list of apps.
-    items: Vec<Item<T>>,
+    conn: Connection,
     /// The reference time used in the ranking calculations.
     reference_time: f64,
     /// The half life of the app launches
-    half_life: f32,
+    half_life: f64,
+    _ph: PhantomData<T>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Item<T: Debug + Clone + Serialize + DBItem + PartialEq> {
+pub struct Container<T: DBItem> {
+    pub id: u64,
     pub item: T,
-    score: f32,
-    pub uuid: String,
 }
 
-struct Container<'a, T: Debug + Clone + Serialize + DBItem + PartialEq> {
-    item: &'a Item<T>,
-    sort_score: f32,
-}
-
-pub trait DBItem {
+pub trait DBItem: Serialize + de::DeserializeOwned + Hash {
     fn get_sort_string(&self) -> &str;
 }
 
+fn update_frecency(
+    score: f64,
+    weight: f64,
+    elapsed: f64,
+    half_life: f64,
+) -> f64 {
+    let exp = 2.0f64.powf(elapsed / half_life);
+    (score / exp + weight) * exp
+}
+
+macro_rules! table_def {
+    ($input:expr, $tmp:expr) => {
+        format!(
+            "CREATE {} TABLE IF NOT EXISTS {} (
+              id          INT PRIMARY KEY NOT NULL,
+              score       REAL NOT NULL,
+              sort_text   TEXT NOT NULL,
+              data        BLOB NOT NULL
+          );",
+            if $tmp { "TEMPORARY" } else { "" },
+            $input
+        );
+    };
+}
+
 #[allow(dead_code)]
-impl<
-        T: Debug + Clone + Serialize + de::DeserializeOwned + DBItem + PartialEq,
-    > FrecencyDB<T>
-{
+impl<T: DBItem> FrecencyDB<T> {
     /// Create a new app.
-    pub fn new(items: Vec<T>) -> Self {
-        let items = items
-            .into_iter()
-            .map(|item| Item {
-                item,
-                score: 0.0,
-                uuid: Uuid::new_v4().to_string(),
+    pub fn new(db_path: impl AsRef<Path>) -> Result<Self> {
+        let conn = Connection::open(db_path)?;
+        conn.pragma_update(None, "temp_store", &"MEMORY")?;
+        conn.execute(&table_def!("main", false), NO_PARAMS)?;
+        conn.create_scalar_function("calc_score", 3, true, |ctx| {
+            let f_score = ctx.get::<f64>(0)?;
+            let text = ctx.get::<String>(1)?;
+            let search = ctx.get::<String>(2)?;
+            Ok(match fuzzy_match(&text, &search) {
+                Some(score) if score > 0 => score as f64 + f_score,
+                _ => 0.0,
             })
-            .collect();
-        FrecencyDB {
-            items,
+        })?;
+        Ok(FrecencyDB {
+            conn,
             reference_time: current_time_secs(),
             // Half life of 3 days
             half_life: 60.0 * 60.0 * 24.0 * 3.0,
-        }
+            _ph: PhantomData::default(),
+        })
     }
 
-    /// Load database file.
+    /// Seconds elapsed since the reference time.
+    fn secs_elapsed(&self) -> f64 {
+        (current_time_secs() - self.reference_time)
+    }
+
+    /// Update the score of an app.
     ///
     /// # Arguments
     ///
-    /// * `path` - Location of the database file
-    pub fn load(path: impl AsRef<Path>) -> Result<FrecencyDB<T>> {
-        let path = path.as_ref().display().to_string();
-        let lock = FileLock::lock(&path, true, false).map_err(|e| {
-            Error::new(e).context(FrecencyDBError::FileOpen(path.to_owned()))
-        })?;
-        let apps: FrecencyDB<T> = rmp::from_read(&lock.file).map_err(|e| {
-            Error::new(e).context(FrecencyDBError::ParseDB(path.to_owned()))
-        })?;
-        Ok(apps)
+    /// * `uuid` - The uuid of the app to update.
+    /// * `weight` - The amount to update to score by.
+    pub fn update_score(&mut self, id: u64) -> Result<()> {
+        let score: f64 = self.conn.query_row(
+            "SELECT * FROM main WHERE id = ?",
+            &[id as i64],
+            |row| row.get(1),
+        )?;
+        self.conn.execute(
+             "UPDATE main SET score=? WHERE id=?;",
+             params![
+                 update_frecency(score, 1.0, self.secs_elapsed(), self.half_life,) as f64,
+                 id as i64,
+             ],
+         )?;
+        Ok(())
     }
 
-    /// Save database file.
+    /// Merge the apps from a re-scan into the database.
     ///
-    /// # Arguments
-    ///
-    /// * `path` - Location of the database file
-    pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
-        let path = path.as_ref().display().to_string();
-        let buf = rmp::to_vec(&self).expect("Failed to encode apps db");
-        if Path::new(&path).exists() {
-            let mut lock = FileLock::lock(&path, true, true).map_err(|e| {
-                Error::new(e)
-                    .context(FrecencyDBError::FileOpen(path.to_owned()))
-            })?;
-            lock.file.write_all(&buf).map_err(|e| {
-                Error::new(e)
-                    .context(FrecencyDBError::FileWrite(path.to_owned()))
-            })?;
-        } else {
-            let mut file = File::create(&path).map_err(|e| {
-                Error::new(e)
-                    .context(FrecencyDBError::FileCreate(path.to_owned()))
-            })?;
-            file.write_all(&buf).map_err(|e| {
-                Error::new(e)
-                    .context(FrecencyDBError::FileWrite(path.to_owned()))
-            })?;
+    /// * Apps in `self` that are not in `apps_to_merge` will be removed from `self`
+    /// * Apps in `apps_to_merge` not in `self` will be added to `self`
+    pub fn merge_new_entries(
+        &mut self,
+        items_to_merge: &[impl DBItem],
+    ) -> Result<()> {
+        self.conn.execute_batch(&format!(
+            "BEGIN;{}{}COMMIT;",
+            table_def!("new", true),
+            table_def!("tmp", false)
+        ))?;
+        let mut insert = self
+             .conn
+             .prepare("INSERT INTO new (id, score, sort_text, data) VALUES (?, 0.0, ?, ?);")?;
+        for item in items_to_merge {
+            let mut hasher = DefaultHasher::new();
+            item.hash(&mut hasher);
+            let id = hasher.finish() as i64;
+            let sort_text = item.get_sort_string();
+            let data = rmp::to_vec(&item)?;
+            insert.execute(params![id, sort_text, data])?;
         }
+        self.conn.execute_batch(
+            "
+             BEGIN;
+             INSERT INTO tmp
+             SELECT
+                 new.id,
+                 CASE WHEN main.score IS NOT NULL
+                 THEN main.score
+                 ELSE 0.0
+                 END AS score,
+                 CASE WHEN main.sort_text IS NOT NULL
+                 THEN main.sort_text
+                 ELSE new.sort_text
+                 END AS sort_text,
+                 CASE WHEN main.data IS NOT NULL
+                 THEN main.data
+                 ELSE new.data
+                 END AS data
+             FROM new LEFT OUTER JOIN main
+             ON new.id = main.id;
+             DROP TABLE main;
+             DROP TABLE new;
+             ALTER TABLE tmp RENAME TO main;
+             COMMIT;",
+        )?;
         Ok(())
     }
 
@@ -138,122 +191,49 @@ impl<
         &self,
         search: &str,
         num_items: Option<usize>,
-    ) -> Vec<&Item<T>> {
-        let mut item_list = self
-            .items
-            .iter()
-            .filter_map(|item| {
-                match fuzzy_match(&item.item.get_sort_string(), &search) {
-                    Some(score) if score > 0 => Some(Container {
-                        item,
-                        sort_score: item.score + score as f32,
-                    }),
-                    _ => None,
-                }
+    ) -> Result<Vec<Container<T>>> {
+        let mut stmt = self.conn.prepare(
+            "
+         SELECT
+         id, data, calc_score(score, sort_text, ?) as sort_score
+         FROM main
+         WHERE sort_score > 0
+         ORDER BY sort_score DESC",
+        )?;
+        let item_iter = stmt.query_map(params![search], |row| {
+            let id: i64 = row.get(0)?;
+            let data: Vec<u8> = row.get(1)?;
+            let obj: T = rmp::from_slice(&data).unwrap();
+            Ok(Container {
+                id: id as u64,
+                item: obj,
             })
-            .collect::<Vec<_>>();
-        item_list.sort_by(|left, right| {
-            right.sort_score.partial_cmp(&left.sort_score).unwrap()
-        });
-        if let Some(n) = num_items {
-            item_list = item_list.into_iter().take(n).collect();
-        }
-        item_list.into_iter().map(|item| item.item).collect()
+        })?;
+        let res: Result<Vec<_>, _> = match num_items {
+            Some(num) => item_iter.take(num).collect(),
+            None => item_iter.collect(),
+        };
+        Ok(res?)
     }
 
-    /// Increment to score for app `to_update` by 1 launch.
-    pub fn update(&mut self, to_update: &Item<T>) {
-        self.update_score(&to_update.uuid, 1.0);
-    }
-
-    /// Seconds elapsed since the reference time.
-    fn secs_elapsed(&self) -> f32 {
-        (current_time_secs() - self.reference_time) as f32
-    }
-
-    /// Update the score of an app.
-    ///
-    /// # Arguments
-    ///
-    /// * `uuid` - The uuid of the app to update.
-    /// * `weight` - The amount to update to score by.
-    pub fn update_score(&mut self, uuid: &str, weight: f32) {
-        let elapsed = self.secs_elapsed();
-        self.items
-            .iter_mut()
-            .find(|item| item.uuid == *uuid)
-            .unwrap()
-            .update_frecency(weight, elapsed, self.half_life);
-    }
-
-    /// Merge the apps from a re-scan into the database.
-    ///
-    /// * Apps in `self` that are not in `apps_to_merge` will be removed from `self`
-    /// * Apps in `apps_to_merge` not in `self` will be added to `self`
-    pub fn merge_new_entries(&mut self, mut items_to_merge: Vec<T>) {
-        let items = std::mem::replace(&mut self.items, Vec::new());
-        self.items = items
-            .into_iter()
-            .filter(|item| items_to_merge.contains(&item.item))
-            .collect();
-        items_to_merge = items_to_merge
-            .into_iter()
-            .filter(|item| {
-                !self.items.iter().any(|l_item| l_item.item == *item)
+    pub fn get_by_id(&self, id: u64) -> Result<Option<Container<T>>> {
+        Ok(self
+            .conn
+            .query_row("SELECT * FROM main WHERE id = ?", &[id as i64], |row| {
+                let id: i64 = row.get(0)?;
+                let data: Vec<u8> = row.get(3)?;
+                let obj: T = rmp::from_slice(&data).unwrap();
+                Ok(Container {
+                    id: id as u64,
+                    item: obj,
+                })
             })
-            .collect();
-        for item in items_to_merge {
-            self.items.push(Item::new(item));
-        }
-    }
-
-    pub fn iter(&self) -> Iter<Item<T>> {
-        self.items.iter()
-    }
-}
-
-#[allow(dead_code)]
-impl<
-        T: Debug + Clone + Serialize + de::DeserializeOwned + DBItem + PartialEq,
-    > Item<T>
-{
-    pub fn new(item: T) -> Self {
-        Self {
-            item,
-            score: 0.0,
-            uuid: Uuid::new_v4().to_string(),
-        }
-    }
-
-    fn get_frecency(&self, elapsed: f32, half_life: f32) -> f32 {
-        self.score / 2.0f32.powf(elapsed / half_life)
-    }
-
-    fn set_frecency(&mut self, new: f32, elapsed: f32, half_life: f32) {
-        self.score = new * 2.0f32.powf(elapsed / half_life);
-    }
-
-    fn update_frecency(&mut self, weight: f32, elapsed: f32, half_life: f32) {
-        self.set_frecency(
-            self.get_frecency(elapsed, half_life) + weight,
-            elapsed,
-            half_life,
-        );
-    }
-}
-
-impl<
-        T: Debug + Clone + Serialize + de::DeserializeOwned + DBItem + PartialEq,
-    > PartialEq for Item<T>
-{
-    fn eq(&self, other: &Item<T>) -> bool {
-        self.uuid == other.uuid
+            .optional()?)
     }
 }
 
 /// Return the current time in seconds as a float
-#[allow(dead_code)]
-pub fn current_time_secs() -> f64 {
+fn current_time_secs() -> f64 {
     match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
         Ok(n) => {
             (u128::from(n.as_secs()) * 1000 + u128::from(n.subsec_millis()))
@@ -289,6 +269,20 @@ mod tests {
             self.as_str()
         }
     }
+
+    // #[test]
+    // fn big() {
+    //     let mut db: FrecencyDB<String> = FrecencyDB::new("test.db").unwrap();
+    //     let r1 = vec![
+    //         "hello".to_owned(),
+    //         "world".to_owned(),
+    //         "hello world".to_owned(),
+    //     ];
+    //     db.merge_new_entries(&r1).unwrap();
+    //     db.update_score(&r1[2]).unwrap();
+    //     let out: Vec<String> = db.get_ranked_list("hello", None).unwrap();
+    //     assert_eq!(out, vec!["test".to_owned()]);
+    // }
 
     // #[test]
     // fn merge_new_entries_identical() {

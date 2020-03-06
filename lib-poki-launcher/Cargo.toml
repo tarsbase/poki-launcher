@@ -46,3 +46,8 @@ walkdir = "2.3"
 file-lock = "1.1"
 freedesktop_entry_parser = "0.1"
 notify = "4.0"
+# frecency_db = {path = "../../frecency_db"}
+
+[dependencies.rusqlite]
+version = "0.21"
+features = ["functions"]

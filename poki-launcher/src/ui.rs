@@ -49,7 +49,7 @@ struct PokiLauncher {
     base: qt_base_class!(trait QObject),
     list: Vec<ListItem>,
     model: qt_property!(RefCell<SimpleListModel<QListItem>>; NOTIFY model_changed),
-    selected: qt_property!(QString; NOTIFY selected_changed WRITE set_selected),
+    selected: qt_property!(u64; NOTIFY selected_changed),
     visible: qt_property!(bool; NOTIFY visible_changed),
     loading: qt_property!(bool; NOTIFY loading_changed),
     has_moved: qt_property!(bool),
@@ -184,13 +184,13 @@ impl PokiLauncher {
         });
     }
 
-    fn set_selected<T: Into<QString>>(&mut self, selected: T) {
-        self.selected = selected.into().into();
+    fn set_selected(&mut self, selected: u64) {
+        self.selected = selected;
         self.selected_changed();
     }
 
-    fn get_selected(&self) -> String {
-        self.selected.clone().into()
+    fn get_selected(&self) -> u64 {
+        self.selected
     }
 
     fn search(&mut self, text: String) {
@@ -209,9 +209,9 @@ impl PokiLauncher {
             || !self.list.iter().any(|item| item.id == self.get_selected())
         {
             if !self.list.is_empty() {
-                self.set_selected(self.list[0].id.clone());
+                self.set_selected(self.list[0].id);
             } else {
-                self.set_selected(QString::default());
+                self.set_selected(0);
             }
         }
         self.model.borrow_mut().reset_data(
@@ -292,13 +292,13 @@ impl PokiLauncher {
             .unwrap();
         let mut launcher = LAUNCHER.lock().expect("Launcher Mutex Poisoned");
 
-        if let Err(err) = launcher.run(&item.id) {
+        if let Err(err) = launcher.run(item.id) {
             error!("{:?}", err);
         }
 
         self.list.clear();
         self.model.borrow_mut().reset_data(Default::default());
-        self.set_selected(QString::default());
+        self.set_selected(0);
     }
 
     fn hide(&mut self) {
@@ -325,7 +325,7 @@ impl PokiLauncher {
 #[derive(Default, Clone, SimpleListItem)]
 struct QListItem {
     pub name: String,
-    pub id: String,
+    pub id: u64,
     pub icon: String,
 }
 

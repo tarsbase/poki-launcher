@@ -80,10 +80,10 @@ impl PokiLauncher {
         Ok(vec![])
     }
 
-    pub fn run(&mut self, id: &str) -> Result<()> {
+    pub fn run(&mut self, id: u64) -> Result<()> {
         let selected = self.selected_plugin.take();
         match selected {
-            Some(selected) => self.plugins[selected].run(&self.config, &id),
+            Some(selected) => self.plugins[selected].run(&self.config, id),
             None => Err(anyhow!("No app selected")),
         }
     }
@@ -112,7 +112,7 @@ impl PokiLauncher {
 pub struct ListItem {
     pub name: String,
     pub icon: String,
-    pub id: String,
+    pub id: u64,
 }
 
 pub fn log_errs(errs: &[Error]) {
