@@ -29,15 +29,8 @@ use std::thread;
 const MAX_APPS_SHOWN: usize = 5;
 
 lazy_static! {
-    pub static ref LAUNCHER: Arc<Mutex<Launcher>> = {
-        match Launcher::init() {
-            Ok(launcher) => Arc::new(Mutex::new(launcher)),
-            Err(e) => {
-                error!("{:?}", e);
-                std::process::exit(3);
-            }
-        }
-    };
+    pub static ref LAUNCHER: Arc<Mutex<Option<Launcher>>> =
+        Arc::new(Mutex::new(None));
 }
 
 thread_local! {
@@ -53,6 +46,9 @@ struct PokiLauncher {
     visible: qt_property!(bool; NOTIFY visible_changed),
     loading: qt_property!(bool; NOTIFY loading_changed),
     has_moved: qt_property!(bool),
+    has_error: qt_property!(bool; NOTIFY has_error_changed),
+    error_msg: qt_property!(QString; NOTIFY error_msg_changed),
+    error_msg_full: qt_property!(QString; NOTIFY error_msg_changed),
 
     window_height: qt_property!(i32; NOTIFY settings_changed),
     window_width: qt_property!(i32; NOTIFY settings_changed),
@@ -83,13 +79,25 @@ struct PokiLauncher {
     loading_changed: qt_signal!(),
     model_changed: qt_signal!(),
     settings_changed: qt_signal!(),
+    has_error_changed: qt_signal!(),
+    error_msg_changed: qt_signal!(),
 }
 
 impl PokiLauncher {
     fn init(&mut self) {
-        self.load();
+        let (mut launcher, errors) = match Launcher::init() {
+            Ok(res) => res,
+            Err(e) => {
+                self.show_error(e);
+                return;
+            }
+        };
 
-        let mut launcher = LAUNCHER.lock().expect("Mutex poisoned");
+        for e in errors {
+            self.show_error(e);
+        }
+
+        // let mut launcher = LAUNCHER.lock().expect("Mutex poisoned");
         self.window_height = launcher.config.file_options.window_height;
         self.window_width = launcher.config.file_options.window_width;
 
@@ -163,9 +171,10 @@ impl PokiLauncher {
 
         // Setup desktop file change notifier and callback
         let qptr = QPointer::from(&*self);
-        let reload = qmetaobject::queued_callback(move |()| {
-            qptr.as_pinned().map(|self_| {
-                self_.borrow_mut().load();
+        let callback = qmetaobject::queued_callback(move |err| {
+            qptr.as_pinned().map(|self_| match err {
+                Some(err) => self_.borrow_mut().show_error(err),
+                None => self_.borrow_mut().load(),
             });
         });
         let event_rx = launcher.register_event_handlers();
@@ -174,14 +183,15 @@ impl PokiLauncher {
                 Ok(event) => {
                     debug!("Received event {:?}", event);
                     match event {
-                        Event::Reload => reload(()),
+                        Event::Reload => callback(None),
                     }
                 }
-                Err(e) => {
-                    error!("{:?}", e);
-                }
+                Err(e) => callback(Some(Error::new(e))),
             }
         });
+
+        *LAUNCHER.lock().expect("Mutex poisoned") = Some(launcher);
+        self.load();
     }
 
     fn set_selected(&mut self, selected: u64) {
@@ -197,6 +207,8 @@ impl PokiLauncher {
         self.list = match LAUNCHER
             .lock()
             .expect("Launcher Mutex Poisoned")
+            .as_mut()
+            .unwrap()
             .search(&text, MAX_APPS_SHOWN)
         {
             Ok(list) => list,
@@ -224,19 +236,26 @@ impl PokiLauncher {
         self.loading = true;
         self.loading_changed();
         let qptr = QPointer::from(&*self);
-        let done = qmetaobject::queued_callback(move |()| {
-            qptr.as_pinned().map(|self_| {
-                self_.borrow_mut().loading = false;
-                self_.borrow().loading_changed();
+        let callback = qmetaobject::queued_callback(move |err| {
+            qptr.as_pinned().map(|self_| match err {
+                Some(err) => self_.borrow_mut().show_error(err),
+                None => {
+                    self_.borrow_mut().loading = false;
+                    self_.borrow().loading_changed();
+                }
             });
         });
         thread::spawn(move || {
-            let mut launcher =
-                LAUNCHER.lock().expect("Launcher Mutex Poisoned");
-            if let Err(e) = launcher.reload() {
-                error!("{:?}", e);
+            match LAUNCHER
+                .lock()
+                .expect("Launcher Mutex Poisoned")
+                .as_mut()
+                .unwrap()
+                .reload()
+            {
+                Ok(_) => callback(None),
+                Err(e) => callback(Some(e)),
             }
-            done(());
             trace!("Loading...done");
         });
     }
@@ -290,10 +309,15 @@ impl PokiLauncher {
             .iter()
             .find(|item| item.id == self.get_selected())
             .unwrap();
-        let mut launcher = LAUNCHER.lock().expect("Launcher Mutex Poisoned");
 
-        if let Err(err) = launcher.run(item.id) {
-            error!("{:?}", err);
+        if let Err(e) = LAUNCHER
+            .lock()
+            .expect("Launcher Mutex Poisoned")
+            .as_mut()
+            .unwrap()
+            .run(item.id)
+        {
+            self.show_error(e);
         }
 
         self.list.clear();
@@ -319,6 +343,15 @@ impl PokiLauncher {
                 Error::new(e).context("Error signaling self to exit")
             );
         }
+    }
+
+    fn show_error(&mut self, error: Error) {
+        error!("{:?}", error);
+        self.error_msg = error.to_string().into();
+        self.error_msg_full = format!("{:?}", error).into();
+        self.error_msg_changed();
+        self.has_error = true;
+        self.has_error_changed();
     }
 }
 

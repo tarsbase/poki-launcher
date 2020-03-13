@@ -55,14 +55,17 @@ pub struct PokiLauncher {
 }
 
 impl PokiLauncher {
-    pub fn init() -> Result<PokiLauncher> {
+    pub fn init() -> Result<(PokiLauncher, Vec<Error>)> {
         let config = Config::load()?;
-        let plugins = self::plugins::init_plugins(&config);
-        Ok(PokiLauncher {
-            config,
-            plugins,
-            selected_plugin: None,
-        })
+        let (plugins, errors) = self::plugins::init_plugins(&config);
+        Ok((
+            PokiLauncher {
+                config,
+                plugins,
+                selected_plugin: None,
+            },
+            errors,
+        ))
     }
 
     pub fn search(

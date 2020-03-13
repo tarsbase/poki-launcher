@@ -17,6 +17,7 @@
 import QtQuick 2.6
 import QtQuick.Layouts 1.0
 import QtQuick.Controls 1.1
+import QtQuick.Dialogs 1.1
 
 Rectangle {
     color: launcher.background_color
@@ -149,4 +150,14 @@ Rectangle {
 			}
         }
     }
+
+	MessageDialog {
+		id: errorDialog
+		title: "Error"
+		icon: StandardIcon.Critical
+		visible: launcher.has_error
+		text: launcher.error_msg
+		detailedText: launcher.error_msg
+		standardButtons: StandardButton.Ok
+	}
 }

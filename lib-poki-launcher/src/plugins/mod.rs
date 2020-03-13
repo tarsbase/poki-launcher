@@ -20,12 +20,13 @@ mod files;
 use crate::config::Config;
 use crate::event::Event;
 use crate::ListItem;
-use anyhow::Result;
-use log::{error, info, warn};
+use anyhow::{anyhow, Error, Result};
+use log::{info, warn};
 use std::sync::mpsc::Sender;
 
-pub fn init_plugins(config: &Config) -> Vec<Box<dyn Plugin>> {
+pub fn init_plugins(config: &Config) -> (Vec<Box<dyn Plugin>>, Vec<Error>) {
     let mut plugins: Vec<Box<dyn Plugin>> = Vec::new();
+    let mut errors = Vec::new();
     if config.file_options.plugin_load_order.is_empty() {
         warn!(
             "No plugins loading, launcher will do nothing. \
@@ -40,7 +41,7 @@ pub fn init_plugins(config: &Config) -> Vec<Box<dyn Plugin>> {
                     plugins.push(Box::new(apps))
                 }
                 Err(e) => {
-                    error!("{:?}", e);
+                    errors.push(e);
                 }
             },
             "files" => match self::files::Files::init(&config) {
@@ -49,13 +50,13 @@ pub fn init_plugins(config: &Config) -> Vec<Box<dyn Plugin>> {
                     plugins.push(Box::new(apps))
                 }
                 Err(e) => {
-                    error!("{:?}", e);
+                    errors.push(e);
                 }
             },
-            _ => error!("Unknown plugin: `{}`", plugin_name),
+            _ => errors.push(anyhow!("Unknown plugin: `{}`", plugin_name)),
         }
     }
-    plugins
+    (plugins, errors)
 }
 
 pub trait Plugin: Send + Sync {
