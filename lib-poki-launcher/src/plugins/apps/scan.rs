@@ -15,8 +15,8 @@
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
 use super::{App, AppsDB};
-use anyhow::Error;
-use std::path::PathBuf;
+use anyhow::{Error, Result};
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 use walkdir::WalkDir;
 
@@ -98,10 +98,13 @@ impl AppsDB {
     ///
     /// * `paths` - A list of paths to desktop entries.
     pub fn from_desktop_entries(
+        db_path: impl AsRef<Path>,
         app_paths: &Vec<String>,
-    ) -> (AppsDB, Vec<Error>) {
+    ) -> Result<(AppsDB, Vec<Error>)> {
         let (apps, errors) = scan_desktop_entries(app_paths);
-        (AppsDB::new(apps), errors)
+        let mut db = AppsDB::new(db_path)?;
+        db.merge_new_entries(&apps)?;
+        Ok((db, errors))
     }
 
     /// Update self with new desktop entries.
@@ -115,9 +118,9 @@ impl AppsDB {
     pub fn rescan_desktop_entries(
         &mut self,
         app_paths: &Vec<String>,
-    ) -> Vec<Error> {
+    ) -> Result<Vec<Error>> {
         let (apps, errors) = scan_desktop_entries(app_paths);
-        self.merge_new_entries(apps);
-        errors
+        self.merge_new_entries(&apps)?;
+        Ok(errors)
     }
 }

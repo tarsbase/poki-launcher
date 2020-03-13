@@ -1,3 +1,19 @@
+/***
+ * This file is part of Poki Launcher.
+ *
+ * Poki Launcher is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Poki Launcher is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
+ */
 /// Parse desktop entries
 pub mod desktop_entry;
 /// Run an app
@@ -11,7 +27,7 @@ use crate::config::Config;
 use crate::event::Event;
 use crate::frecency_db::*;
 use anyhow::{anyhow, Error, Result};
-use log::{debug, error, trace, warn};
+use log::{debug, error, warn};
 use notify::{watcher, RecursiveMode, Watcher};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -19,7 +35,7 @@ use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use std::default::Default;
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::mpsc::{self, Sender};
 use std::sync::Mutex;
 use std::thread;
@@ -27,7 +43,6 @@ use std::time::Duration;
 
 pub struct Apps {
     db: Mutex<AppsDB>,
-    db_path: PathBuf,
     app_paths: Vec<String>,
     term_cmd: Option<String>,
 }
@@ -48,25 +63,11 @@ impl Apps {
             warn!("The list of search paths for apps is empty so none will be found");
         }
         let term_cmd = get_term_cmd(&config.file_options.plugins).ok();
-        let db = Mutex::new(AppsDB::new(&db_path)?);
-        // let db = if db_path.as_path().exists() {
-        //     debug!("Loading db from: {}", db_path.display());
-        //     AppsDB::load(&db_path)?
-        // } else {
-        //     trace!("Creating new apps.db");
-        //     trace!("{:#?}", app_paths);
-        //     let (apps_db, errors) = AppsDB::from_desktop_entries(&app_paths);
-        //     crate::log_errs(&errors);
-        //     // TODO visual error indicator
-        //     if let Err(e) = apps_db.save(&db_path) {
-        //         error!("{:?}", e);
-        //     }
-        //     apps_db
-        // };
+        let (db, errors) = AppsDB::from_desktop_entries(&db_path, &app_paths)?;
+        crate::log_errs(&errors);
 
         Ok(Apps {
-            db,
-            db_path,
+            db: Mutex::new(db),
             app_paths,
             term_cmd,
         })
@@ -114,31 +115,32 @@ impl Plugin for Apps {
         input: &str,
         num_items: usize,
     ) -> Result<Vec<ListItem>> {
-        let db = self.db.lock().unwrap();
+        let db = self.db.lock().expect("Apps Mutex poisoned");
         Ok(db
-            .get_ranked_list(input, Some(num_items))
+            .get_ranked_list(input, Some(num_items))?
             .into_iter()
             .map(ListItem::from)
             .collect())
     }
 
-    fn run(&mut self, _: &Config, uuid: &str) -> Result<()> {
-        let item = self
+    fn run(&mut self, _: &Config, id: u64) -> Result<()> {
+        let cont = self
             .db
-            .iter()
-            .find(|item| item.uuid == uuid)
-            .unwrap()
-            .clone();
-        item.item.run(&self.term_cmd)?;
-        self.db.update(&item);
-        self.db.save(&self.db_path)?;
+            .lock()
+            .expect("Apps Mutex poisoned")
+            .get_by_id(id)?
+            .unwrap();
+        cont.item.run(&self.term_cmd)?;
         Ok(())
     }
 
     fn reload(&mut self, _: &Config) -> Result<()> {
-        let errors = self.db.rescan_desktop_entries(&self.app_paths);
+        let errors = self
+            .db
+            .lock()
+            .expect("Apps Mutex poisoned")
+            .rescan_desktop_entries(&self.app_paths)?;
         crate::log_errs(&errors);
-        self.db.save(&self.db_path)?;
         Ok(())
     }
 
@@ -202,16 +204,6 @@ impl Plugin for Apps {
         });
     }
 }
-
-// impl From<&Item<App>> for ListItem {
-//     fn from(item: &Item<App>) -> Self {
-//         Self {
-//             name: item.item.name.clone(),
-//             icon: item.item.icon.clone(),
-//             id: item.uuid.clone(),
-//         }
-//     }
-// }
 
 /// An app on your machine.
 #[derive(Debug, Default, Clone, Serialize, Deserialize, Eq)]
@@ -294,5 +286,15 @@ impl Hash for App {
 impl DBItem for App {
     fn get_sort_string(&self) -> &str {
         self.name.as_str()
+    }
+}
+
+impl From<Container<App>> for ListItem {
+    fn from(cont: Container<App>) -> Self {
+        Self {
+            name: cont.item.name.clone(),
+            icon: cont.item.icon.clone(),
+            id: cont.id,
+        }
     }
 }

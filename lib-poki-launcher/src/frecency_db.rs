@@ -14,13 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-use log::*;
-
-use anyhow::{Error, Result};
+use anyhow::{Context, Result};
 use fuzzy_matcher::skim::fuzzy_match;
+use log::*;
 use rmp_serde as rmp;
-// use serde_derive::{Deserialize, Serialize};
 use rusqlite::{params, Connection, OptionalExtension, NO_PARAMS};
 use serde::{de, Serialize};
 use std::collections::hash_map::DefaultHasher;
@@ -82,8 +79,10 @@ macro_rules! table_def {
 #[allow(dead_code)]
 impl<T: DBItem> FrecencyDB<T> {
     /// Create a new app.
-    pub fn new(db_path: impl AsRef<Path>) -> Result<Self> {
-        let conn = Connection::open(db_path)?;
+    pub fn new(db_path: impl AsRef<Path>) -> Result<FrecencyDB<T>> {
+        let db_path_str = db_path.as_ref().display().to_string();
+        let conn = Connection::open(db_path)
+            .context(FrecencyDBError::OpenDB(db_path_str.clone()))?;
         conn.pragma_update(None, "temp_store", &"MEMORY")?;
         conn.execute(&table_def!("main", false), NO_PARAMS)?;
         conn.create_scalar_function("calc_score", 3, true, |ctx| {
@@ -100,13 +99,13 @@ impl<T: DBItem> FrecencyDB<T> {
             reference_time: current_time_secs(),
             // Half life of 3 days
             half_life: 60.0 * 60.0 * 24.0 * 3.0,
-            _ph: PhantomData::default(),
+            _ph: PhantomData,
         })
     }
 
     /// Seconds elapsed since the reference time.
     fn secs_elapsed(&self) -> f64 {
-        (current_time_secs() - self.reference_time)
+        current_time_secs() - self.reference_time
     }
 
     /// Update the score of an app.
@@ -251,13 +250,7 @@ fn current_time_secs() -> f64 {
 #[derive(Debug, Error)]
 pub enum FrecencyDBError {
     #[error("Error opening apps database file {0}")]
-    FileOpen(String),
-    #[error("Error creating apps database file {0}")]
-    FileCreate(String),
-    #[error("Error writing to apps database file {0}")]
-    FileWrite(String),
-    #[error("Error parsing apps database file {0}")]
-    ParseDB(String),
+    OpenDB(String),
 }
 
 #[cfg(test)]

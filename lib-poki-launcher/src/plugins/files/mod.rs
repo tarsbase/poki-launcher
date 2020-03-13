@@ -1,3 +1,19 @@
+/***
+ * This file is part of Poki Launcher.
+ *
+ * Poki Launcher is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Poki Launcher is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Poki Launcher.  If not, see <https://www.gnu.org/licenses/>.
+ */
 use super::ListItem;
 use super::Plugin;
 use crate::config::Config;
@@ -5,7 +21,7 @@ use crate::frecency_db::*;
 use crate::run::run_bg;
 use anyhow::Context as _;
 use anyhow::{Error, Result};
-use log::{debug, error, trace};
+use log::{debug, trace};
 use serde::{Deserialize, Serialize};
 use std::cmp::PartialEq;
 use std::hash::{Hash, Hasher};
@@ -16,7 +32,6 @@ use walkdir::{DirEntry, WalkDir};
 
 pub struct Files {
     db: Mutex<FilesDB>,
-    db_path: PathBuf,
 }
 
 impl Files {
@@ -24,7 +39,7 @@ impl Files {
         let db_path = config.data_dir.join("files.db");
 
         let db = Mutex::new(FilesDB::new(&db_path)?);
-        Ok(Files { db, db_path })
+        Ok(Files { db })
     }
 }
 
