@@ -48,7 +48,7 @@ pub struct Apps {
 }
 
 impl Apps {
-    pub fn init(config: &Config) -> Result<Self> {
+    pub fn init(config: &Config) -> Result<(Self, Vec<Error>)> {
         let db_path = config.data_dir.join("apps.db");
         let app_paths = match get_app_paths(&config.file_options.plugins) {
             Ok(app_paths) => app_paths,
@@ -64,13 +64,15 @@ impl Apps {
         }
         let term_cmd = get_term_cmd(&config.file_options.plugins).ok();
         let (db, errors) = AppsDB::from_desktop_entries(&db_path, &app_paths)?;
-        crate::log_errs(&errors);
 
-        Ok(Apps {
-            db: Mutex::new(db),
-            app_paths,
-            term_cmd,
-        })
+        Ok((
+            Apps {
+                db: Mutex::new(db),
+                app_paths,
+                term_cmd,
+            },
+            errors,
+        ))
     }
 }
 
@@ -134,14 +136,13 @@ impl Plugin for Apps {
         Ok(())
     }
 
-    fn reload(&mut self, _: &Config) -> Result<()> {
+    fn reload(&mut self, _: &Config) -> Result<Vec<Error>> {
         let errors = self
             .db
             .lock()
             .expect("Apps Mutex poisoned")
             .rescan_desktop_entries(&self.app_paths)?;
-        crate::log_errs(&errors);
-        Ok(())
+        Ok(errors)
     }
 
     fn register_event_handlers(

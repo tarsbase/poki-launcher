@@ -77,7 +77,7 @@ impl Plugin for Files {
         Ok(())
     }
 
-    fn reload(&mut self, _config: &Config) -> Result<()> {
+    fn reload(&mut self, _config: &Config) -> Result<Vec<Error>> {
         let (entries, errors): (Vec<_>, Vec<_>) =
             WalkDir::new("/home/zethra/Documents")
                 .into_iter()
@@ -88,7 +88,6 @@ impl Plugin for Files {
             .map(Result::unwrap_err)
             .map(|e| Error::new(e).context("Error indexing files"))
             .collect();
-        crate::log_errs(&errors);
         let files: Vec<_> = entries
             .into_iter()
             .map(Result::unwrap)
@@ -102,7 +101,7 @@ impl Plugin for Files {
         // debug!("{:#?}", files);
         self.db.lock().unwrap().merge_new_entries(&files)?;
         debug!("Done writing");
-        Ok(())
+        Ok(errors)
     }
 }
 

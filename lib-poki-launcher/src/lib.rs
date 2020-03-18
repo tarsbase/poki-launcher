@@ -117,9 +117,3 @@ pub struct ListItem {
     pub icon: String,
     pub id: u64,
 }
-
-pub fn log_errs(errs: &[Error]) {
-    for err in errs {
-        error!("{:?}", err);
-    }
-}

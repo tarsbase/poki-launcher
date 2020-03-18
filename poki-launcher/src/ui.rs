@@ -97,7 +97,6 @@ impl PokiLauncher {
             self.show_error(e);
         }
 
-        // let mut launcher = LAUNCHER.lock().expect("Mutex poisoned");
         self.window_height = launcher.config.file_options.window_height;
         self.window_width = launcher.config.file_options.window_width;
 

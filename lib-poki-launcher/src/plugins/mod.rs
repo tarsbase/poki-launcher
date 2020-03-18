@@ -36,9 +36,10 @@ pub fn init_plugins(config: &Config) -> (Vec<Box<dyn Plugin>>, Vec<Error>) {
     for plugin_name in &config.file_options.plugin_load_order {
         match plugin_name.as_str() {
             "apps" => match self::apps::Apps::init(&config) {
-                Ok(apps) => {
+                Ok((apps, errs)) => {
                     info!("Loading plugin: `apps`");
-                    plugins.push(Box::new(apps))
+                    plugins.push(Box::new(apps));
+                    errors.extend(errs);
                 }
                 Err(e) => {
                     errors.push(e);
@@ -70,8 +71,8 @@ pub trait Plugin: Send + Sync {
     ) -> Result<Vec<ListItem>>;
     fn run(&mut self, config: &Config, id: u64) -> Result<()>;
     #[allow(unused_variables)]
-    fn reload(&mut self, config: &Config) -> Result<()> {
-        Ok(())
+    fn reload(&mut self, config: &Config) -> Result<Vec<Error>> {
+        Ok(Vec::new())
     }
     #[allow(unused_variables)]
     fn register_event_handlers(
