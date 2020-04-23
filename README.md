@@ -1,5 +1,8 @@
 # Poki Launcher
 
+This is primarily developed over here https://git.sr.ht/~zethra/poki-launcher.  I'll still accept PRs and
+issues on github but the code here might not be up to date.  I'll try to remember to at least post releases here.
+
 **Work in progress**
 
 Poki Launcher is an application launcher for Linux.  It tracks app usage then ranks apps based on frecency and fuzzy search.
